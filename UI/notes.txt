@@ -1,0 +1,216 @@
+what about just doing it through the thread.? serio
+
+
+
+
+def get_text_lines_sample():
+    words_sample = ''
+    for c in range(4):
+        for c in range(12):
+            i = random.randint(0,len(WORDS)-1)
+            words_sample += '%s ' % WORDS[i].strip()
+        words_sample += '\n'
+    return words_sample
+
+
+
+def get_text_lines_sample_2():
+    dl = {'w':'sample text get_text_lines_sample_2'}
+    for c in range(4):
+        name = 'n%i'%c
+        dl[name] = {'<Idle,MPos:0.000,0.000,0.000,WPos:0.000,0.000,0.000,Buf:0,RX:0>'}
+    return dl
+    
+    
+    
+#
+# class MachineOperator(object):
+#     def __init__(self, *args, parent=None):
+#         self.frame = 0
+#         self.idle = True
+#         self.args = args
+#
+#     def start_coms(self):
+#         status_ping()
+#
+#     def _bytes(self, msg_dict):
+#         msg = str(msg_dict) #json.dumps(msg_dict)
+#         return bytes(msg+'\n', 'utf-8')
+#         pass
+#
+#
+#
+#
+    
+global DONG
+DONG = 9000
+
+def rstatic():
+    global DONG
+    p = 0
+    while True:
+        DONG = p
+        p += 1
+        msg = {'w':'other process','dong':DONG}
+        sys.stdout.buffer.write(MACH._bytes(msg))
+        sys.stdout.flush()
+        
+        
+        
+        
+        
+        
+        if p>100: break
+        time.sleep(0.1)
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+import asyncio    
+
+
+
+
+
+
+
+com1 com2?
+
+
+
+
+async def test_1(dummy):
+  res1 = await foo1()
+  return res1
+
+async def test_2(dummy):
+  res2 = await foo2()
+  return res2
+
+async def multiple_tasks(dummy):
+  input_coroutines = [test_1(dummy), test_2(dummy)]
+  res = await asyncio.gather(*input_coroutines, return_exceptions=True)
+  return res
+
+if __name__ == '__main__':
+  dummy = 0
+  res1, res2 = asyncio.get_event_loop().run_until_complete(multiple_tasks(dummy))
+
+
+
+
+import asyncio
+import serial_asyncio
+
+class Output(asyncio.Protocol):
+    def connection_made(self, transport):
+        self.transport = transport
+        print('port opened', transport)
+        transport.serial.rts = False
+        transport.write(b'hello world\n')
+
+    def data_received(self, data):
+        print('data received', repr(data))
+        self.transport.close()
+
+    def connection_lost(self, exc):
+        print('port closed')
+        asyncio.get_event_loop().stop()
+
+loop = asyncio.get_event_loop()
+coro = serial_asyncio.create_serial_connection(loop, Output, '/dev/ttyUSB0', baudrate=115200)
+loop.run_until_complete(coro)
+loop.run_forever()
+loop.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+		
+		
+		
+		
+		
+		
+class AsyncDataStream():
+
+    async def _read_stream(self, stream, cb): #, writer, dat=None):  
+        while True:
+            line = await stream.readline()
+            if line:
+                # if dat is not None: fline = writer.write(b'ok\n')
+                # dl = await writer.drain()
+                lt = line.decode(locale.getpreferredencoding(False)).strip()
+                cb(lt)
+            else:
+                break
+
+    async def _write_stream(self, writer, cb):
+        #print('k',COMD)
+        
+        if len(COMD):
+            line = bytes("%s\n" % COMD, 'utf-8')
+            fline = writer.write(line)
+            dl = await writer.drain()
+            cb('sent [%s]'%COMD)
+            COMD = ''
+        cb('COMD')
+
+    async def _stream_subprocess(self, cmd, stdin_cb, stdout_cb, stderr_cb):  
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdin=asyncio.subprocess.PIPE, 
+            stdout=asyncio.subprocess.PIPE, 
+            stderr=asyncio.subprocess.PIPE
+            )
+            
+        try:
+            print("start _stream_subprocess")
+            
+            await asyncio.wait([
+                self._write_stream(process.stdin, stdin_cb),
+                self._read_stream(process.stdout, stdout_cb),#, process.stdin, 1),
+                self._read_stream(process.stderr, stderr_cb) #, process.stdin),
+                
+            ])
+            
+            
+            
+            
+            #return await process.wait()
+        except Exception as exc:
+            print('Error: {}'.format(exc))
+        else:
+            print("done _stream_subprocess")
+

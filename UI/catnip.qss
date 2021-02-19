@@ -1,0 +1,170 @@
+
+QWidget#ControlWidget{
+	background-color: rgba(10,60,80,255);
+}
+
+QPushButton {background-color: rgba(0,0,0,100)}
+
+
+QSplitter:vertical{
+	background-color: rgba(10,60,90,255);
+	height:10px;
+}
+
+QSplitter::handle:vertical {	
+	image: url(UI/graphics/tree-ar-down.png);
+/*	border: 1px dotted rgba(10,200,200,255);
+	height:1px;
+	width:16px;
+	margin: 0 2px;*/
+}
+
+QTreeWidget QHeaderView:section {
+	border:0;
+	background-color: rgb(0,80,0);
+	color: rgb(0,120,0);
+}
+
+QTreeWidget#basicVarsWidget{
+	color:rgba(0,200,0,255);
+	background-color: rgb(0,80,0);
+	alternate-background-color: rgb(0,75,0);
+	/*selection-background-color:transparent;*/
+}
+
+QTreeWidget#basicVarsWidget::item{
+
+}
+
+	  
+QTreeWidget::branch{
+	opacity:0.5;
+}	
+  
+QTreeWidget::branch::closed::has-children {
+    image: url(UI/graphics/tree-ar-right.png);
+}            
+
+QTreeWidget::branch::open::has-children {
+    image: url(UI/graphics/tree-ar-down.png);
+}
+
+
+
+QTreeWidget::branch:selected {
+	background-color: rgba(0,120,0,255);
+	/*selection-background-color:transparent;
+    /*selection-background-color: blue;*/
+}
+
+QTreeWidget#basicVarsWidget::item:selected{
+	background-color: rgba(0,120,0,255);
+	selection-color: yellow;
+}
+
+QTableWidget#logWidget{
+	background-color: rgba(10,70,90,20);
+	gridline-color: rgba(10,70,90,30);
+	color:rgba(10,70,90,100);
+	font-size:10px;
+	line-height:10px;
+	padding:0;
+	margin:0;
+}
+
+QTableWidget#logWidget:row{
+	height:6px;
+}
+
+QTableWidget#logWidget:item{
+	color:rgba(10,70,90,100);
+	padding:0;
+	margin:0;
+	height:6px;
+}
+
+
+QLineEdit {
+	color: yellow;
+	outline: 0;
+    border: None;
+	padding: 0 4px;
+	selection-color: black;
+    selection-background-color: yellow;
+}
+
+
+QTreeWidget QLineEdit {
+	background: rgb(0,75,0);
+}
+
+QLineEdit#lineEdit {
+    padding: 0 8px;
+	background: rgba(0,0,0,0);
+}
+
+
+QLineEdit:focus {
+	border: 0;
+	outline: 0;
+}
+
+QTableWidget#tableWidget{
+	background-color: rgba(10,60,90,255);
+	gridline-color: rgb(10,35,45);
+	padding:0;
+	margin:0;
+}
+
+QTableWidget#tableWidget::item{
+	color: rgba(10,200,200,255);
+	font-weight: bold;
+}
+
+QProgressBar:horizontal {
+	border: 0;
+	border-radius: 0;
+	background: rgb(0,40,0);
+	padding: 0px;
+	text-align: right;
+	min-height: 24px;
+}
+
+QProgressBar::chunk:horizontal {
+	background: rgb(0,60,0);
+	min-height: 24px;
+}
+
+QTableWidget#ControlWidget::item{
+	min-height: 48px;
+}
+
+
+QLabel,QLabel[mandatoryField=false]{
+	color: rgba(10,200,200,255);
+	font-weight: bold;
+	padding: 0 8px;
+}
+
+QLabel[mandatoryField=true] { 
+	color: rgba(20,240,240,255);
+	background-color: rgba(0,175,175,50);
+}
+
+QLabel:hover{
+	color: rgba(20,240,240,255);
+	font-weight: bold; 
+	background-color: rgba(0,155,155,50);
+}
+
+QLabel#messenger{
+	color: rgba(10,120,120,255);
+}
+
+/*background-color: rgba(0,155,155,35);*/
+/*
+QTableWidget::item:hover{ background-color: rgba(0,155,155,100); }
+QTableWidget::item:selected{ background-color: rgba(0,155,155,100); }
+*/
+
+*{outline: 0;}

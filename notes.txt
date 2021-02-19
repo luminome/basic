@@ -1,0 +1,5 @@
+pipreqs --force
+#get all the deps for this directory/project
+
+
+

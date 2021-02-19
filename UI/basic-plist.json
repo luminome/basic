@@ -1,0 +1,79 @@
+{
+    "MACH": {
+        "RX_BUFFER_SIZE": 128,
+        "MAX_BAUD_RATE": 115200,
+        "SERIAL_PORT": "/dev/cu.usbmodem14101",
+        "DEFAULT_PORTS": [
+            "'/dev/ttyACM0'",
+            "'/dev/cu.usbmodem14101'",
+            "'/dev/cu.usbmodem14201'",
+            "'ok fine'"
+        ],
+        "MACH_PATH": "/Users/sac/Sites/afsolo/printer/modules/mach.py",
+        "RANDY_MULTIPLEX": 10,
+        "STATUS_DELAY": 1.0,
+        "BUFFER_DELAY": 0.01
+    },
+    "GRBL": {
+        "FEED_RATE": 8000,
+        "SEEK_RATE": 18000,
+        "PAUSE_ONE": 0.2,
+        "PAUSE_TWO": 2.4,
+        "Z_DEPTH": 4.0,
+        "SET_ZERO": [
+            "G21 G90",
+            "G10 L20 X0 Y0 Z0",
+            "F4000"
+        ],
+        "GOTO_ZERO": [
+            "G0 Z0",
+            "G90 G0 X0 Y0",
+            "G90 G0 Z0"
+        ],
+        "INIT_DEPTH": [
+            "G1 X0 Y0 Z4",
+            "G4 P2.0",
+            "G0 Z0",
+            "G1 Z4",
+            "G4 P2.0",
+            "G0 Z0"
+        ]
+    },
+    "MAIN": {
+        "X_PAGE": 1800,
+        "Y_PAGE": 1000,
+        "GRAPH_SUBPLOT_LEN": 50,
+        "ROOT_ABS_PATH": "/Users/sac/Sites/afsolo"
+    },
+    "TEST": {
+        "G": "Wader, there's a fly in my soup.",
+        "A": "How this trial should proceed.",
+        "B": "Taking a position on impeachment.",
+        "Perp": "Partisan scrotes",
+        "Randy": "You magnificent little twat.",
+        "RULES": "This actually fucking rules 1000x"
+    },
+    "VARS": {
+        "Two": {
+            "bipedal sensation": 10,
+            "effective movement": 12
+        },
+        "Three": {
+            "no options": "Here are some options.",
+            "further reading": {
+                "a": 0,
+                "dang": "2"
+            }
+        },
+        "Four": [
+            "ps ax | grep mach.py",
+            "pkill -f mach.py",
+            "blank",
+            "snowman"
+        ],
+        "VARS": {
+            "LOGS": "False2",
+            "PATH": "gcode/smeg.svg.gcode"
+        }
+    }
+}

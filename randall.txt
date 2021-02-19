@@ -1,9 +1,12 @@
 git remote add origin git@github.com:luminome/basic.git
 git branch -M main
+
+
+
+
 git push -u origin main
 
-
- git pull origin main --allow-unrelated-histories
+git pull origin main --allow-unrelated-histories
 
 
 ssh -vT git@github.com

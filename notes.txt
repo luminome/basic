@@ -15,7 +15,20 @@ ssh -vT git@github.com
 
 
 ssh-keygen -t ed25519 -C "sac.673@gmail.com"
-ssh config
 
+
+ssh config
+s
 
 posturing
+
+
+WORDS = None
+with open('/Users/sac/Sites/afsolo/utility-files/words-two.txt', 'r') as words:
+    WORDS = words.readlines()
+	
+	
+
+#sys.path.insert(1, '/Users/sac/Sites/afsolo/UI')
+#print(os.getcwd())
+#os.chdir('/Users/sac/Sites/afsolo/')

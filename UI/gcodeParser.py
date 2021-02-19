@@ -115,7 +115,7 @@ def read_gcode(gcodefile, addprobe=None):
                     
                     if len(mix_in):
                         for i in mix_in:
-                            print(i)
+                            #print(i)
                             lexical_output_file += [i]
                             probe_line = parse_gcode_line_to_plot(i)
                             machine.update(probe_line)

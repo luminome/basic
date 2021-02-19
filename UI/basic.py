@@ -6,7 +6,6 @@ import locale
 import inspect
 import os
 import re
-#import ast 
 
 from scipy.spatial.distance import cdist
 
@@ -15,6 +14,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5 import uic
 
+# TODO YES
 import numpy as np
 import pyqtgraph as pg 
 
@@ -25,8 +25,6 @@ import argparse
 from types import MethodType
 
 import gcodeParser
-
-#from poplist import PopListMainWindow
 
 from basicVarsWidget import VarsWidget
 
@@ -43,17 +41,6 @@ _parser.add_argument('-probe', help = 'distance between points to probe in units
 _parser.add_argument('-s','--session', action='store_true', default=False, help='space plot session')
 _args = _parser.parse_args()
 
-
-
-#sys.path.insert(1, '/Users/sac/Sites/afsolo/UI')
-
-print(os.getcwd())
-#os.chdir('/Users/sac/Sites/afsolo/')
-
-
-WORDS = None
-with open('/Users/sac/Sites/afsolo/utility-files/words-two.txt', 'r') as words:
-    WORDS = words.readlines()
         
 FONT = QFont('Monaco', 10)
 

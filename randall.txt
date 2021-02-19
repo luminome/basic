@@ -3,8 +3,14 @@ git branch -M main
 git push -u origin main
 
 
+ git pull origin main --allow-unrelated-histories
+
+
 ssh -vT git@github.com
 
 
 ssh-keygen -t ed25519 -C "sac.673@gmail.com"
 ssh config
+
+
+posturing

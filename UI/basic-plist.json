@@ -43,7 +43,9 @@
         "X_PAGE": 1800,
         "Y_PAGE": 1000,
         "GRAPH_SUBPLOT_LEN": 50,
-        "ROOT_ABS_PATH": "/Users/sac/Sites/afsolo"
+        "ROOT_ABS_PATH": "/Users/sac/Sites/afsolo",
+        "CHARDATA_N": "UI/static/charmap.txt",
+        "CHARDATA_B": "UI/static/charmap-bold.txt"
     },
     "TEST": {
         "G": "Wader, there's a fly in my soup.",

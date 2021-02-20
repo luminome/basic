@@ -125,7 +125,7 @@ class MainPlotWindowHandler():
     def init_plot(self, init_args):
         self.plot.setMouseEnabled()
         self.plot.setAspectLocked()
-        self.plot.hideAxis('left')
+        #self.plot.hideAxis('left')
         self.plot.setXRange(1800,00)
         self.plot.setYRange(0,1000)
         

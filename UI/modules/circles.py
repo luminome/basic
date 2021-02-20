@@ -11,7 +11,7 @@ import numpy as np
 _resolution = 10
 
 #utility ƒ
-def spin(npx, npy, a):
+def rotate(npx, npy, a):
     nx = npx*np.cos(a)-npy*np.sin(a)
     ny = npy*np.cos(a)+npx*np.sin(a)
     return nx,ny
@@ -56,52 +56,13 @@ def circle_arc(ray,h,res=_resolution):
         
     points = np.zeros([l+1,2])
     for i in range(0,l+1):
-        points[i] = np.array([spin(OREL[0],OREL[1],(i*RINT))])
+        points[i] = np.array([rotate(OREL[0],OREL[1],(i*RINT))])
 
     points += RC
 
     return points
     
-    
-if __name__ == '__main__':
-    
-    import matplotlib.pyplot as plt
-    from matplotlib.animation import FuncAnimation
 
-    fig, ax = plt.subplots()
+def test():
+    print('ok')
 
-    ax.set_xlim(-8, 8)
-    ax.set_ylim(-8, 8)
-    ax.set_aspect('equal', adjustable='box')
-
-    def init():
-        group = []
-        return group
-
-    def update(iteration):
-        #ax.clear()
-        h = 8 * np.random.random_sample() -4
-        a,b = 16 * np.random.random_sample((2,2)) -8
-
-        e = np.array([a,b])
-        h = 1.0
-        
-        points = circle_arc(e,h,res=_resolution)
-
-        a0 = points[0]
-        b0 = points[-1]
-        
-        ax.plot(a0[0],a0[1], '-ko', markersize=2.0)
-        ax.plot(b0[0],b0[1], '-ko', markersize=2.0)
-        
-        ax.plot(points[:,0],points[:,1], '-ro', markersize=0.5, linewidth = 0.5)
-    
-        #return True#group
-
-    animation = FuncAnimation(fig, update, init_func=init, interval=40)#, blit=True)
-
-    #print(c,R)
-    plt.show()
-
-    exit()
-###########################################################################################################################    

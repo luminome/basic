@@ -140,7 +140,7 @@ def read_gcode(gcodefile, addprobe=None):
 
 
 def svg_to_gcode(svgfile, draw_args=None):
-    os.chdir('svg2gcode_grbl-master')
+    os.chdir('UI/modules/svg2gcode_grbl-master')
     c = 'python3 convert.py %s %s' % (svgfile, svgfile+'.gcode')
     p = Popen([c], stdout=PIPE, shell=True)
     p.wait()

@@ -1,7 +1,9 @@
-parse==1.19.0
 pyserial_asyncio==0.5
-numpy==1.19.2
-qasync==0.13.0
 scipy==1.5.2
+parse==1.19.0
 pyqtgraph==0.11.1
+matplotlib==3.3.2
+numpy==1.19.2
+Shapely==1.7.1
+qasync==0.13.0
 PyQt5==5.15.2

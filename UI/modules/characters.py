@@ -26,7 +26,7 @@ class SAC_TEXT:
         self.alignment = alignment
         self.styled = style
         self.gcode = []
-        self.bounds = []
+        #self.bounds = []
         self.comments = []
         self.cursor = 0
         self.geometry = []
@@ -36,69 +36,45 @@ class SAC_TEXT:
         self.y_space = 2.5
         with open(CHARDATA_N,'r') as cfi: self.charmap['normal'] = [c.strip().split() for c in cfi.readlines()]
         with open(CHARDATA_B,'r') as cfi: self.charmap['bold'] = [c.strip().split() for c in cfi.readlines()]
-        #with open(CHARDATA_B,'r') as cfi: self.charmap['bold'].append(cfi.readlines())
         self.flat = []
         self.chardata_start_index = 0
         self.lines = []
-        #self.write(string)
-        #self.set_position(position)
-            
-    def get_bounds_list(self):
-        n = np.array(self.bounds.exterior.coords)
-        return n.tolist()
-                
-    def get_lines_list(self):
-        e = [np.array(e.coords).tolist() for e in self.geometry]
-        return e   
-                
-    def set_position(self,position=[0.0,0.0]):
-        self.bounds = affinity.translate(self.bounds, xoff=position[0], yoff=position[1])
-        self.geometry = affinity.translate(self.geometry, xoff=position[0], yoff=position[1])
+        self.lines_total = 0
+        self.lines_all = []
         
-    def move(self,position=[0.0,0.0]):
-        pos_delta = np.array(position)-np.array(self.position)
-        self.bounds = affinity.translate(self.bounds, xoff=pos_delta[0], yoff=pos_delta[1])
-        self.geometry = affinity.translate(self.geometry, xoff=pos_delta[0], yoff=pos_delta[1])
-        self.position = position    
-        
-    
     def bounds(self):
         return np.array([np.amin(self.flat, axis=0),np.amax(self.flat, axis=0)]).flatten()
         
-        
-    def write(self, string_or_list, scale=1.0, style='normal'):
-        
-        
+    def write(self, string_or_list, scale=1.0, style='normal', spacing=1.0):
         if isinstance(string_or_list, str) or isinstance(string_or_list, int):
             self.lines = [string_or_list]
         else:
             self.lines = string_or_list
         
+        if self.alignment == 'left': x_vary = 0.0
+        if self.alignment == 'right': x_vary = -1.0
+        if self.alignment == 'center': x_vary = -0.5
         points_one = []
         
-        for line in self.lines:
+        for j,line in enumerate(self.lines):
             if type(line) == int:
-                points = [self.get_char_map(int(line), style)]
+                points = [self.get_char_map(line, style)]
             else:
                 points = [self.get_char_map(ord(char), style) for char in line]
             
             c = self.charwidth*scale
             xp = scale*self.x_space
             yp = scale*self.y_space
+            line_width = (len(points)*(c+xp))-xp
             
-            line_width = len(points)*(c+xp)
-            
-            self.cursor -= c+self.y_space #line_height
-            
-            if self.alignment == 'left': x_vary = 0.0
-            if self.alignment == 'right': x_vary = line_width*-1.0
-            if self.alignment == 'center': x_vary = line_width/-2.0
+            if self.lines_total == 0:
+                self.cursor -= (c*0.5)
+            else:
+                self.cursor -= (c)
             
             for i,p in enumerate(points):
-                
-                m = np.array([i*(c+xp)+x_vary, self.cursor])
-                
-                adj = [np.array(q)*scale+m for q in p]
+                m = np.array([i*(c+xp)+(line_width*x_vary), self.cursor])
+                adj = [self.position+(np.array(q)*scale+m) for q in p]
                 
                 for v in adj:
                     v = [rotate(s[0],s[1],np.radians(self.angle)) for s in v]
@@ -106,14 +82,14 @@ class SAC_TEXT:
                         self.flat += [point]
                     points_one.append(v)
             
-            
+            self.cursor -= (yp*spacing)
+            self.lines_total += 1
                 
+        self.lines_all += points_one
         return points_one
         
-                
-    
     def get_char_map(self, char, style):
-        print(char)
+        #print(char)
         
         char_array = self.charmap['normal'][char] if style == 'normal' else self.charmap['bold'][char]
         chmap = [[char]]
@@ -132,13 +108,6 @@ class SAC_TEXT:
                 chmap[st_index-1].append(c)
         
         g = chmap[1:]
-        #logger.error(g)
-        
-        # if len(g) == 1:
-        #     f = LineString(g[0])
-        # else:
-        #     f = MultiLineString(g)
-                
         return g 
 
 

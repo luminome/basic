@@ -79,6 +79,7 @@ class MainPlotWindowHandler():
         self.off_state = np.array([])
         self.points_count = 0
         self.parent = None
+        self.marks = True
 
 
     def re_slate(self):
@@ -89,6 +90,9 @@ class MainPlotWindowHandler():
         self.bounds_points_index = 0
         self.g_base = pg.GraphItem()
         self.plot.addItem(self.g_base)
+        
+        
+        
         # self.g_off_base = pg.GraphItem()
         # self.plot.addItem(self.g_off_base)
         # self.g_trace_base = pg.GraphItem()
@@ -97,7 +101,7 @@ class MainPlotWindowHandler():
         # x,y = np_ppos[i-1]-np_ppos[i]
         # arrow_angle = np.arctan2(y,x) * 180 / np.pi
         arrow_dims = 10.0
-        arrow = pg.ArrowItem(angle=90.0, pen=None)#, pen=off_pen)
+        arrow = pg.ArrowItem(angle=90.0, pen=None)
         arrow.setPos(0,0)
         arrow.setStyle(headWidth=(arrow_dims*0.75), headLen=(arrow_dims*2), tailLen=arrow_dims, tailWidth=(arrow_dims*0.5), brush='r')
         arrow.setParentItem(self.g_base)
@@ -108,6 +112,9 @@ class MainPlotWindowHandler():
             subplots = int(np.ceil(self.points_count/GRAPH_SUBPLOT_LEN))+1
             self.subplots_rst = subplots-1
             for d in range(subplots): self.add_subplot()
+        
+        if not self.marks: self.g_base.hide()
+        
         
     def attach_plot(self,plot):
         self.plot = plot
@@ -122,6 +129,16 @@ class MainPlotWindowHandler():
         
         self.location.setData(pos=pos_r, adj=nadj, pen=off_pen, size=1+s, pxMode=False)
 
+    def callback(self,event):
+        #event[0] holds a positional argument you pass to 
+        position = event[0]
+        b = self.plot.getViewBox()
+        x = int(b.mapSceneToView(position).x())
+        y = int(b.mapSceneToView(position).y())
+        self.parent.user_location.setText(f'({x},{y})')
+        
+    
+    
     def init_plot(self, init_args):
         self.plot.setMouseEnabled()
         self.plot.setAspectLocked()
@@ -132,6 +149,11 @@ class MainPlotWindowHandler():
         self.source_path = prepare_source(init_args)
         self.parent.log(init_args)
         self.parent.log('SRC', self.source_path)
+        
+        self.proxy = pg.SignalProxy(self.plot.scene().sigMouseMoved, rateLimit=60, slot=self.callback)
+        
+        
+        
         
         if len(self.source_path):
  
@@ -149,6 +171,8 @@ class MainPlotWindowHandler():
             self.s_pos = np.array(self.batch[:,[1,2]], dtype=float)
         
         self.re_slate()
+        
+        
         
         self.parent.log('SRC LEN',len(self.file_raw))
         
@@ -359,7 +383,7 @@ class GraphUtil(object):
                 label = pg.LabelItem(('%i' % self._on_ind), color=on_color)
                 label.setPos(x,y)
                 label.scale(0.25, -0.25)
-                label.setParentItem(target_subplot)
+                label.setParentItem(MMM.g_base)#target_subplot)
             
             self.tape[self._on_ind] = MMM.s_pos[ind]
             if pt1[0] != 0: # either G1 or G4 w/out comment.
@@ -562,7 +586,8 @@ class MainWindow(QMainWindow):
         MMM.attach_plot(self.graphicsView)
         MMM.parent = self
         MMM.init_plot(_args)
-        
+        MMM.marks = True
+
         GRA.prepare()
         GRA.set_tape()
         GRA.parent = self
@@ -617,7 +642,9 @@ class MainWindow(QMainWindow):
         self.setObjectName('basic')
         self.show()
     
+    
 
+    
     def basic_reset(self):
         
         MMM.re_slate()
@@ -636,7 +663,7 @@ class MainWindow(QMainWindow):
         self.log_table.log(*args)
         #print(args)
 
-    # method for components 
+    # method for menu and table control components 
     def UiComponents(self): 
         ##Derive a custom class from QLabel implementing handlers for mouse events.
         
@@ -705,6 +732,7 @@ class MainWindow(QMainWindow):
                 'main':{
                     'auto':{'f':'auto run graphui','k':'A'},
                     'wipe':{'f':'clear it all out','k':'W'},
+                    'marks':{'f':'toggle subplot bounds and numbers','k':'W','c':True},
                 },
                 'menu':True,
                 'column':7,
@@ -773,6 +801,13 @@ class MainWindow(QMainWindow):
         flit.setAlignment(Qt.AlignVCenter)
         self.tableWidget.setCellWidget(0 , 8, flit)
         self.messenger = flit
+        
+        flit = QLabel('(comment)')
+        flit.setObjectName('user_location')
+        flit.setAlignment(Qt.AlignLeft)
+        flit.setAlignment(Qt.AlignVCenter)
+        self.tableWidget.setCellWidget(1 , 8, flit)
+        self.user_location = flit
         
         for c in range(0,self.tableWidget.columnCount()):
             self.tableWidget.resizeColumnToContents(c)
@@ -922,7 +957,13 @@ class MainWindow(QMainWindow):
             self.AUTORUN = not self.AUTORUN
         elif q.text() == 'wipe':
             self.basic_reset()
+        elif q.text() == 'marks':
+            MMM.marks = not MMM.marks
             
+            if MMM.marks:
+                MMM.g_base.show()
+            else:
+                MMM.g_base.hide()
     #THIS
     def mach_connect(self):
         self.log('MACH','def ƒ',__name__,inspect.stack()[0][3])

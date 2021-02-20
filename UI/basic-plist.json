@@ -11,7 +11,8 @@
         ],
         "MACH_PATH": "/Users/sac/Sites/afsolo/printer/modules/mach.py",
         "RANDY_MULTIPLEX": 10,
-        "STATUS_DELAY": 1.0,
+        "STATUS_DELAY": 0.1,
+		"STATUS_POS": "W",
         "BUFFER_DELAY": 0.01
     },
     "GRBL": {
@@ -42,7 +43,7 @@
     "MAIN": {
         "X_PAGE": 1800,
         "Y_PAGE": 1000,
-        "GRAPH_SUBPLOT_LEN": 50,
+        "GRAPH_SUBPLOT_LEN": 500,
         "ROOT_ABS_PATH": "/Users/sac/Sites/afsolo",
         "CHARDATA_N": "UI/static/charmap.txt",
         "CHARDATA_B": "UI/static/charmap-bold.txt"

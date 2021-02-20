@@ -24,6 +24,7 @@ class ser_async_grbl(object):
         self.gc = 0
         self.RX = None #reader
         self.TX = None #writer
+        self.statusPos = STATUS_POS
         self.status = None
         self.state = 'init'
         self.gcode = []
@@ -74,7 +75,9 @@ class ser_async_grbl(object):
     def get_pos_tuple(self):
         if self.status:
             s,m,w,b,r = self.status
-            return m.split(',')
+            if STATUS_POS == 'M': return m.split(',')
+            if STATUS_POS == 'W': return w.split(',')
+            
         return (0.0,0.0,0.0)
     #WAITER:
     def run_state(self, val=None):

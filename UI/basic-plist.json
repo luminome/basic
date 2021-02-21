@@ -12,12 +12,12 @@
         "MACH_PATH": "/Users/sac/Sites/afsolo/printer/modules/mach.py",
         "RANDY_MULTIPLEX": 10,
         "STATUS_DELAY": 0.1,
-		"STATUS_POS": "W",
+        "STATUS_POS": "W",
         "BUFFER_DELAY": 0.01
     },
     "GRBL": {
-        "FEED_RATE": 8000,
-        "SEEK_RATE": 18000,
+        "FEED_RATE": 2000,
+        "SEEK_RATE": 4000,
         "PAUSE_ONE": 0.2,
         "PAUSE_TWO": 2.4,
         "Z_DEPTH": 4.0,
@@ -27,12 +27,12 @@
             "F4000"
         ],
         "GOTO_ZERO": [
-            "G0 Z0",
+            "G0 Z0 F4000",
             "G90 G0 X0 Y0",
             "G90 G0 Z0"
         ],
         "INIT_DEPTH": [
-            "G1 X0 Y0 Z4",
+			"G1 Z4 F4000",
             "G4 P2.0",
             "G0 Z0",
             "G1 Z4",
@@ -51,10 +51,7 @@
     "TEST": {
         "G": "Wader, there's a fly in my soup.",
         "A": "How this trial should proceed.",
-        "B": "Taking a position on impeachment.",
-        "Perp": "Partisan scrotes",
-        "Randy": "You magnificent little twat.",
-        "RULES": "This actually fucking rules 1000x"
+        "B": "Taking a position on impeachment."
     },
     "VARS": {
         "Two": {

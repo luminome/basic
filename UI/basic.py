@@ -32,6 +32,13 @@ from serialAsyncGrbl import ser_async_grbl
 
 from plistLoader import PlistLoader, plistPath
 
+#from modules import characters
+
+import basicGcodeCmds as bgc
+
+from modules import circles, textures, characters
+
+
 LDLF = PlistLoader(plistPath())
 LDLF.load_to_globals(globals(),('MACH','GRBL','MAIN'))
 
@@ -80,7 +87,7 @@ class MainPlotWindowHandler():
         self.points_count = 0
         self.parent = None
         self.marks = True
-
+        self.clickpos = []
 
     def re_slate(self):
         for cplot in self.plot.allChildItems(): self.plot.removeItem(cplot)
@@ -129,20 +136,31 @@ class MainPlotWindowHandler():
         
         self.location.setData(pos=pos_r, adj=nadj, pen=off_pen, size=1+s, pxMode=False)
 
-    def callback(self,event):
-        #event[0] holds a positional argument you pass to 
+    def movecallback(self,event):
         position = event[0]
         b = self.plot.getViewBox()
         x = int(b.mapSceneToView(position).x())
         y = int(b.mapSceneToView(position).y())
-        self.parent.user_location.setText(f'({x},{y})')
-        
+        follow = None
+        if len(self.clickpos):
+            follow = str(self.clickpos)
+        self.parent.user_location.setText(f'({x},{y}) {follow}')
     
+    def clickcallback(self,event):
+        position = event[0].pos()
+        b = self.plot.getViewBox()
+        x = b.mapSceneToView(position).x()
+        y = b.mapSceneToView(position).y()
+        self.clickpos = (x,y)
+        self.parent.plotClicked(event,x,y)
+        self.parent.user_location.setText(f'CLK({x},{y})')
+
+            
     
     def init_plot(self, init_args):
         self.plot.setMouseEnabled()
         self.plot.setAspectLocked()
-        #self.plot.hideAxis('left')
+        self.plot.hideAxis('left')
         self.plot.setXRange(1800,00)
         self.plot.setYRange(0,1000)
         
@@ -150,30 +168,21 @@ class MainPlotWindowHandler():
         self.parent.log(init_args)
         self.parent.log('SRC', self.source_path)
         
-        self.proxy = pg.SignalProxy(self.plot.scene().sigMouseMoved, rateLimit=60, slot=self.callback)
-        
-        
-        
+        self.moveproxy = pg.SignalProxy(self.plot.scene().sigMouseMoved, rateLimit=60, slot=self.movecallback)
+        self.clickproxy = pg.SignalProxy(self.plot.scene().sigMouseClicked, rateLimit=60, slot=self.clickcallback)
         
         if len(self.source_path):
- 
             self.batch, self.file_raw  = gcodeParser.read_gcode(self.source_path[0])
-        
             self.batch = np.array(self.batch)
             self.adj = np.array([[c,c+1] for c in range(0,len(self.batch)-1)])
             self.points_count = self.batch.shape[0]
-        
             self.off_state = np.zeros([self.points_count,2], dtype=int)
             self.off_pos = np.zeros([self.points_count,2])
-            
             self.bounds_pos = np.zeros([self.points_count,2])
             self.bounds_adj = np.zeros([self.points_count,2], dtype=int)
             self.s_pos = np.array(self.batch[:,[1,2]], dtype=float)
         
         self.re_slate()
-        
-        
-        
         self.parent.log('SRC LEN',len(self.file_raw))
         
     def show_subplot_bounds(self,subplot_index):
@@ -420,6 +429,40 @@ class GraphUtil(object):
         
         
         
+class selecta(QComboBox):
+    def __init__(self, parent = None):
+        super(selecta, self).__init__(parent)
+        self.index = None
+        self.parent = parent
+      
+        self.currentIndexChanged.connect(self.selectionchange)
+	
+      # layout.addWidget(self.cb)
+      # self.setLayout(layout)
+      # self.setWindowTitle("combo box demo")
+
+    def selectionchange(self,i):
+        self.index = i
+                #
+        # for count in range(self.count()):
+        #     print( self.itemText(count))
+        # print( "Current index",i,"selection changed ",self.currentText())
+	
+        self.parent.moduleChange(i,self.currentText())
+    
+    # def showPopup(self):
+    #     super().showPopup()
+    #     # find the widget that contains the list; note that this is *not* the view
+    #     # that QComboBox.view() returns, but what is used to show it.
+    #     popup = self.view().window()
+    #     rect = popup.geometry()
+    #     print(rect.topLeft())
+    #     popup.move(rect.topLeft())
+        # QComboBox::showPopup();
+#         QPoint pos = mapToGlobal(QPoint(0, height()));
+#         view()->parentWidget()->move(pos);
+
+         
         
 class NewLabel(QLabel):
     def __init__(self, label_text, label_action=None):
@@ -564,7 +607,7 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(self.spec_style_sheet)
         # self.setAutoFillBackground(True)
 
-
+        self.plot_click_interactions_count = 0
         
         self.log_table = FancyOverlay(self) 
         self.log_table.setContentsMargins(0, 0, 0, 0)
@@ -641,10 +684,7 @@ class MainWindow(QMainWindow):
         self.UiComponents()
         self.setObjectName('basic')
         self.show()
-    
-    
-
-    
+  
     def basic_reset(self):
         
         MMM.re_slate()
@@ -691,8 +731,8 @@ class MainWindow(QMainWindow):
             },
             'kpad_1':{
                 'main':{
-                    '1':{'f':'keypad1','k':'1'},
-                    '4':{'f':'keypad4','k':'2'},
+                    '1':{'f':'keypad1','ke':'1'},
+                    '4':{'f':'keypad4','ke':'2'},
                     '7':{'f':'keypad7','k':'3'},
                     '-':{'f':'keypadNeg','k':'4'},
                 },
@@ -809,8 +849,19 @@ class MainWindow(QMainWindow):
         self.tableWidget.setCellWidget(1 , 8, flit)
         self.user_location = flit
         
+        flit = selecta(self)
+        flit.setObjectName('module_selecta')
+        flit.addItems(["module", "numbers", "G0 (move to)", "circles", "texture", "text"])
+        self.tableWidget.setCellWidget(2 , 8, flit)
+        self.module_selecta = flit
+        
+        #self.module_selecta.parent = self 
+        
         for c in range(0,self.tableWidget.columnCount()):
             self.tableWidget.resizeColumnToContents(c)
+
+
+    
 
     def auto_run(self):
         global AUTORUN
@@ -871,17 +922,15 @@ class MainWindow(QMainWindow):
         return super(MainWindow, self).eventFilter(obj, event)
     
     def iterate(self,spec=None):
-        global AUTORUN
-        AUTORUN = True
         #TODO YOU DID IT!
-        GRA.iterate(spec)
-        return
-        
+        #if self.AUTORUN:
+        if MACH.delivering: GRA.iterate(spec)
+        #return
+
     def machine_trace(self):
-        global AUTORUN
-        AUTORUN = True
+        #if self.AUTORUN:
         GRA.machine_trace()
-        return
+        #return
         
     def update_frame(self):
         try:
@@ -918,18 +967,39 @@ class MainWindow(QMainWindow):
         loop.stop()
         self.log("asyncio loop.stop.")
 
-    
-    
-    
-    
-    
+
+
+    def plotClicked(self, evt, x, y):
+        
+        #self.parent.user_location.setText(f'Clicked ({x},{y})')
+        print(evt, x, y)
+        
+        if self.module_selecta.index == 1: #for "numbers"
+            f = characters.SAC_TEXT(position=[x,y], alignment='center')
+            f.write((f'{self.plot_click_interactions_count}',),2.0,'bold')
+            rew = bgc.line(f.lines_all,0)
+            MACH.reset_delivery()
+            MACH.load_gcode(rew)
+            MACH.delivering = True
+            self.lineEdit.setText(f'delivering module. ({self.plot_click_interactions_count})')
+            
+        elif self.module_selecta.index == 2: #for "G0 %s"          
+            cmd = 'G0 X%4.3f Y%4.3f Z0 F%i' % (x,y,SEEK_RATE)
+            self.lineEdit.setText(cmd)
+            self.mach_cmd()
+        
+        self.plot_click_interactions_count += 1
+        
+
+    def moduleChange(self,index,name):
+        #self.module_selecta
+        print(index,name)
     
     def menu_action_hover(self,q):
           self.statusBar().showMessage(q.toolTip())
-                
+    
     def menu_action_click(self,q):
-        self.log('ACTION: %s %s' % (q.text(), q.isChecked()) )
-        
+        #self.log('ACTION: %s %s' % (q.text(), q.isChecked()) )
         if q.text() == 'connect':
             q.setEnabled(False)
             self.mach_connect()
@@ -959,11 +1029,22 @@ class MainWindow(QMainWindow):
             self.basic_reset()
         elif q.text() == 'marks':
             MMM.marks = not MMM.marks
-            
             if MMM.marks:
                 MMM.g_base.show()
             else:
                 MMM.g_base.hide()
+                
+        elif 'keypad' in q.toolTip():
+            key = str(q.text())[-1]
+            x,y = [[0,0],[-1,1],[0,1],[1,1],[-1,0],[0,0],[1,0],[-1,-1],[0,-1],[1,-1]][int(key)]
+            
+            mx,my,mz = [float(a) for a in MACH.status[2].split(',')] #s,m,w,b,r
+            
+            MACH.delivering = False
+            cmd = f'G0 X{mx+x*10} Y{my+y*10} Z0 F{SEEK_RATE}'
+            self.lineEdit.setText(cmd)
+            self.mach_cmd()
+            
     #THIS
     def mach_connect(self):
         self.log('MACH','def ƒ',__name__,inspect.stack()[0][3])

@@ -41,7 +41,7 @@ class ser_async_grbl(object):
         self.delivering = False
         self.connected = False
         self.cmd_actual = 0
-    
+        
     
     def reset_delivery(self):
         self.lc = 0
@@ -60,11 +60,12 @@ class ser_async_grbl(object):
             print(args)
     #LOAD COMMANDS [LIST]
     def load_gcode(self,code_list):
-        self.gcode = ['G0 X0 Y0 Z0']#['G21 G90','G10 L20 X0 Y0 Z0']
-        self.gcode += code_list
-        self.gcl = len(code_list)
+        #self.gcode = ['G0 X0 Y0 Z0']#['G21 G90','G10 L20 X0 Y0 Z0']
+        self.gcode = code_list
+        self.gcl = len(self.gcode)
         self.state = 'ser_async_grbl loaded %i lines' % self.gcl
         self.log(self.state)
+        
     #VARS DUMP
     def test(self):
         self.state = 'test'

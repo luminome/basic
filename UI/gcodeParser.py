@@ -26,14 +26,17 @@ def parse_gcode_line_to_plot(line):
     return state
     
     
-def read_gcode(gcodefile, addprobe=None):
+def read_gcode(gcodefileorlist, addprobe=None, fromlist=False):
     lexical_output_file = []
     
     machine = {'G':0,'X':00.00,'Y':00.00,'Z':00.00,'F':0,'P':0.0,'comment':None}
     
-    command_content = [] #whole file now
-    with open(gcodefile, 'r') as filehandle:
-        command_content = filehandle.readlines()
+    if fromlist == False:
+        with open(gcodefileorlist, 'r') as filehandle:
+            command_content = filehandle.readlines()
+    else:
+        command_content = gcodefileorlist
+    
     
     if len(command_content) > 0:
         
@@ -66,11 +69,9 @@ def read_gcode(gcodefile, addprobe=None):
                 dist = np.linalg.norm(b-a)
             
                 
-                #so machine_A[G] is always zero in this scenario
-                    
+                #so machine_A[G] is always zero in this scenario                    
                 if addprobe:    
                     if dist > int(addprobe):
-                        #print('have distance_lock')
                         distance_lock = True
                     
                     mix_in = [] 
@@ -127,9 +128,7 @@ def read_gcode(gcodefile, addprobe=None):
                 
                 
                 lexical_output_file += [str(cmd).strip()]
-                #reset pause-state and g-state
                 GSTATE = machine['G']
-
                 machine['comment'] = None
         
         

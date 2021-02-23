@@ -16,11 +16,13 @@ def rotate(npx, npy, a):
     ny = npy*np.cos(a)+npx*np.sin(a)
     return nx,ny
 
-def circle_arc(ray,h,res=_resolution):
+def circle_arc(ray,height=1.0,resolution=_resolution):
     a,b = ray
     d = b-a
     c = np.linalg.norm(d)
-
+    h = height
+    res = resolution
+    
     d_u = (d / c)
 
     n_unit = np.empty_like(d_u)

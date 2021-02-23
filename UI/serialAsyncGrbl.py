@@ -27,7 +27,7 @@ class ser_async_grbl(object):
         self.statusPos = STATUS_POS
         self.status = None
         self.state = 'init'
-        self.gcode = []
+        self.gcode = ['(welcome init in list)']
         self.gcl = 0
         self.clock = 0
         self.shell = False
@@ -61,7 +61,7 @@ class ser_async_grbl(object):
     #LOAD COMMANDS [LIST]
     def load_gcode(self,code_list):
         #self.gcode = ['G0 X0 Y0 Z0']#['G21 G90','G10 L20 X0 Y0 Z0']
-        self.gcode = code_list
+        self.gcode += code_list
         self.gcl = len(self.gcode)
         self.state = 'ser_async_grbl loaded %i lines' % self.gcl
         self.log(self.state)
@@ -116,23 +116,20 @@ class ser_async_grbl(object):
         while True:
             
             # with self.cond: await self.cond.wait()
-                
             # print(self._event.is_set())
-            #
             # await self.is_done()
             
             self.TX.write(b'?')
             self.clock += 1
-
             await self.TX.drain()
 
-            if self.state == 'sent-batch':
-                if self.status:
-                    s,m,w,b,r = self.status
-                    if s == 'Idle' and b == '0' and r == '0':
-                        self.state = 'completed'
-                        self.TX.write(b'?') #last one to flush read.
-                        #break
+            # if self.state == 'sent-batch':
+            #     if self.status:
+            #         s,m,w,b,r = self.status
+            #         if s == 'Idle' and b == '0' and r == '0':
+            #             self.state = 'completed'
+            #             self.TX.write(b'?') #last one to flush read.
+            #             #break
                     
             if self.coms: self.parent.machine_trace()
             
@@ -238,6 +235,7 @@ class ser_async_grbl(object):
                             
                             self.bc.append(len(block)+1)
                             self.TX.write((block+'\n').encode('utf-8'))
+                            
                             await self.TX.drain()
                             if self.log_grbl: self.log("tx: ( %03i / %i ) g%03i \'%s\'" % (self.lc,self.gcl,self.gc,block))
                             self.lc += 1

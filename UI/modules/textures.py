@@ -94,23 +94,42 @@ def textured_poly(N_POLY,point_loc,texture='lines',mm_size=1.0,angle=0.0,ost=0.0
 
     return output_shapes
 
-def texture(type="circles",angle=0.0):
+#
+# def texture(*args, **kwargs):
+#     print(args,kwargs)
+#
+
+
+def texture(pos=[0.0,0.0], diam=10.0, wmax=1.0, wmin=0.1, style="circles", pitch=1.0, angle=0.0, ost=0.0):
+
+    print(pos,diam,wmax,wmin,style,pitch,angle,ost)
     
-    _lim = 40
-    _width = 200
-    _angle = 0.0 #90.0 # np.degrees(np.pi/12)
-
-    #point_loc = (_lim) * np.random.random_sample((1,2)) -(_lim/2)
-    point_width = (_width/2)+(_width * np.random.random_sample())
-
-    point_loc = [900,500]
-
+    point_width = diam*wmin+diam*wmax*np.random.random_sample()
     r = 8+int(point_width/3)
+    N_POLY = Point(pos).buffer(point_width,resolution=r)
+    return textured_poly(N_POLY,pos,texture=style,mm_size=pitch,angle=angle,ost=ost)
 
-    N_POLY = Point(point_loc).buffer(point_width,resolution=r)
 
-    #array of LineStrings as np
-    return textured_poly(N_POLY,point_loc,texture='circles',mm_size=10,angle=angle,ost=-4)
+
+
+#
+# def texture(type="circles",angle=0.0):
+#
+#     _lim = 40
+#     _width = 200
+#     _angle = 0.0 #90.0 # np.degrees(np.pi/12)
+#
+#     #point_loc = (_lim) * np.random.random_sample((1,2)) -(_lim/2)
+#     point_width = (_width/2)+(_width * np.random.random_sample())
+#
+#
+#
+#     r = 8+int(point_width/3)
+#
+#     N_POLY = Point(point_loc).buffer(point_width,resolution=r)
+#
+#     #array of LineStrings as np
+#     return textured_poly(N_POLY,point_loc,texture='circles',mm_size=10,angle=angle,ost=-4)
     
 
 

@@ -4,6 +4,7 @@ import time
 from time import localtime,strftime
 import locale
 import inspect
+import traceback
 import os
 import re
 
@@ -38,8 +39,8 @@ import basicGcodeCmds as bgc
 
 from modules import circles, textures, characters
 
-
 LDLF = PlistLoader(plistPath())
+
 LDLF.load_to_globals(globals(),('MACH','GRBL','MAIN'))
 
 _parser = argparse.ArgumentParser(description='draw-layout-from-gcode')
@@ -67,9 +68,12 @@ trace_brush = pg.mkBrush(color=trace_color)
 
 """ROOT CLASSES [ƒ]"""
 class MainPlotWindowHandler():
+    """creates file_raw(gcode) and batch(something else instruction)
+    refer to gcodeparser for else instructions"""
+    
     def __init__(self, parent = None):
         #print(args)
-        self.batch = []
+        self.batch = np.zeros([1,7])
         self.s_pos = []
         self.file_raw = []
         self.plot = None #pg.PlotWidget
@@ -78,6 +82,7 @@ class MainPlotWindowHandler():
         self.point_index = 0
         self.bounds_points_index = 0
         self.subplots = []
+        self.subplots_2 = []
         self.subplots_rst = 0
         self.subplot_index = 1
         self.bounds_pos = np.array([])
@@ -88,43 +93,54 @@ class MainPlotWindowHandler():
         self.parent = None
         self.marks = True
         self.clickpos = []
-
+        self.loaded_file = None
+        
+        
     def re_slate(self):
-        for cplot in self.plot.allChildItems(): self.plot.removeItem(cplot)
+        #for cplot in self.plot.allChildItems(): self.plot.removeItem(cplot)
         self.subplots = []
-        #self.points_count = 0
         self.subplot_index = 0
         self.bounds_points_index = 0
-        self.g_base = pg.GraphItem()
-        self.plot.addItem(self.g_base)
+        if not self.marks: self.g_base.hide()
+              
+    def attach_plot(self,plot):
+        self.plot = plot
+        self.plot.setMouseEnabled(True)
+        self.plot.setAspectLocked()
+        self.plot.hideAxis('left')
+        self.plot.setXRange(X_PAGE,0)
+        self.plot.setYRange(0,Y_PAGE)
+        self.moveproxy = pg.SignalProxy(self.plot.scene().sigMouseMoved, rateLimit=60, slot=self.movecallback)
+        self.clickproxy = pg.SignalProxy(self.plot.scene().sigMouseClicked, rateLimit=60, slot=self.clickcallback)
+        
+        g_base = pg.GraphItem()
+        self.plot.addItem(g_base)
+        #g_base.setParentItem(self.plot)
+        self.g_base = g_base
+        
+        t_base = pg.GraphItem()
+        self.plot.addItem(t_base)
+        #g_base.setParentItem(self.plot)
+        self.t_base = t_base
+        #self.t_base.setMouseEnabled(False)
         
         
         
-        # self.g_off_base = pg.GraphItem()
-        # self.plot.addItem(self.g_off_base)
-        # self.g_trace_base = pg.GraphItem()
-        # self.plot.addItem(self.g_trace_base)
         
-        # x,y = np_ppos[i-1]-np_ppos[i]
-        # arrow_angle = np.arctan2(y,x) * 180 / np.pi
         arrow_dims = 10.0
         arrow = pg.ArrowItem(angle=90.0, pen=None)
         arrow.setPos(0,0)
         arrow.setStyle(headWidth=(arrow_dims*0.75), headLen=(arrow_dims*2), tailLen=arrow_dims, tailWidth=(arrow_dims*0.5), brush='r')
         arrow.setParentItem(self.g_base)
-        #self.plot.addItem(self.arrow)
+        
+        self.bounds_pos = np.zeros([self.points_count,2])
+        self.bounds_adj = np.zeros([self.points_count,2], dtype=int)
+        
         self.arrow = arrow
         
-        if self.points_count:
-            subplots = int(np.ceil(self.points_count/GRAPH_SUBPLOT_LEN))+1
-            self.subplots_rst = subplots-1
-            for d in range(subplots): self.add_subplot()
+        self.add_subplot()
+        self.parent.log(f'initial subplots {len(self.subplots)}')
         
-        if not self.marks: self.g_base.hide()
-        
-        
-    def attach_plot(self,plot):
-        self.plot = plot
         
     def show_mach_location(self):
         npos = np.array([[-1,0],[1,0],[0,-1],[0,1]],dtype=float)
@@ -151,46 +167,101 @@ class MainPlotWindowHandler():
         b = self.plot.getViewBox()
         x = b.mapSceneToView(position).x()
         y = b.mapSceneToView(position).y()
+        
+        delta = self.clickpos
         self.clickpos = (x,y)
-        self.parent.plotClicked(event,x,y)
+        
+        
         self.parent.user_location.setText(f'CLK({x},{y})')
+        return self.parent.plotClicked(event,x,y,delta)
+        #return super().mousePressEvent(event)
 
-            
-    
-    def init_plot(self, init_args):
-        self.plot.setMouseEnabled()
-        self.plot.setAspectLocked()
-        self.plot.hideAxis('left')
-        self.plot.setXRange(1800,00)
-        self.plot.setYRange(0,1000)
+    def add_load_gcode(self, parsed_gcode):
+        #TODO: add subplots dynamically. yes this can be dynamic.
+        points,filelines = parsed_gcode
+        #self.parent.log(f'input points{len(points)} codes{len(filelines)}')
+        pt = np.array(points)
+        self.file_raw += filelines
+        self.batch = np.vstack((self.batch, pt))
+        #self.parent.log(f'new batch shape{self.batch.shape})')
+        self.points_count = self.batch.shape[0]
+        while self.points_count >= np.floor(GRAPH_SUBPLOT_LEN*((len(self.subplots)-2)/2)): self.add_subplot()
+        #important to use the "2" because need 2 plots. one for drawing, one for machine trace.
+        self.s_pos = np.array(self.batch[:,[1,2]], dtype=float)
+        #self.parent.log(f'subplots {len(self.subplots)}')
         
-        self.source_path = prepare_source(init_args)
+    def add_gcode_file(self):
+        #pointbatch, pointfile = gcodeParser.read_gcode(self.source_path[0])
+        self.add_load_gcode(gcodeParser.read_gcode(self.source_path[0]))
+        #self.re_slate()
+        pass
+
+    def add_gcode_points(self, raw_gcode_list):
+        self.add_load_gcode(gcodeParser.read_gcode(raw_gcode_list,fromlist=True))
+        pass
+        
+    def store_file_in_basic_args(self, init_args):
+        self.source_path = self.prepare_source(init_args)
         self.parent.log(init_args)
-        self.parent.log('SRC', self.source_path)
+        self.parent.log(f'SRC PATH: {self.source_path[0]}')
+        #then can add_gcode_points from this source
+
+    #prepare file sources from _args return file(s)_to_print[] autonome ƒ
+    def prepare_source(self,_args):
+        print(sys.path[0],__file__,__name__)
+        file_sources = []
+        files_to_print = []
+        extension = 'gcode'
+        skip_exts = ["session", ".ai", ".png", ".jpg"]
+
+        if _args.file: 
+            PATH = _args.file
         
-        self.moveproxy = pg.SignalProxy(self.plot.scene().sigMouseMoved, rateLimit=60, slot=self.movecallback)
-        self.clickproxy = pg.SignalProxy(self.plot.scene().sigMouseClicked, rateLimit=60, slot=self.clickcallback)
+            if os.path.exists(PATH):
+                if os.path.isfile(PATH):
+                    file_sources += [PATH]
+                else:
+                    file_sources += [file for file in os.listdir(PATH) if not any(x in file for x in skip_exts)]
+                    #os.path.join(PATH,file)
+                    file_ordered = sorted(file_sources,key=lambda x: int(os.path.splitext(x)[0]))
+                    file_sources = [os.path.join(PATH,file) for file in file_ordered]
+            else:
+                print('path no found:',PATH)
+                exit()
+
+            for f_PATH in file_sources:
+                CONVERT_SVG = False if '.gcode' in f_PATH or '.txt' in f_PATH else True
+                f_PATH_abs = os.path.join(os.getcwd(),f_PATH)
+            
+                files_to_print += [gcodeParser.svg_to_gcode(f_PATH_abs, _args) if CONVERT_SVG else f_PATH_abs]
+                print('file:', f_PATH, f_PATH_abs, CONVERT_SVG)
+            
+            if _args.session:
+                #//assumes sources in same directory
+                session_file_path = os.path.join(os.getcwd(),PATH,'session.gcode')
+                with open(session_file_path,'w+') as file:
+                    file.truncate(0)
+                    for f in files_to_print:
+                        with open(f) as cmd_block:
+                            file.write(cmd_block.read()+'\n\n')
+            
+                files_to_print = [session_file_path]
+                print('session:', session_file_path)
+            
+        else:    
+            print('no path provided. opening module.')
+            #exit()
         
-        if len(self.source_path):
-            self.batch, self.file_raw  = gcodeParser.read_gcode(self.source_path[0])
-            self.batch = np.array(self.batch)
-            self.adj = np.array([[c,c+1] for c in range(0,len(self.batch)-1)])
-            self.points_count = self.batch.shape[0]
-            self.off_state = np.zeros([self.points_count,2], dtype=int)
-            self.off_pos = np.zeros([self.points_count,2])
-            self.bounds_pos = np.zeros([self.points_count,2])
-            self.bounds_adj = np.zeros([self.points_count,2], dtype=int)
-            self.s_pos = np.array(self.batch[:,[1,2]], dtype=float)
-        
-        self.re_slate()
-        self.parent.log('SRC LEN',len(self.file_raw))
-        
+    
+        return files_to_print
+   
     def show_subplot_bounds(self,subplot_index):
         g = self.subplots[subplot_index]
         _b = 5.0 #_buffer
         # (N,2) array of the positions of each node in the graph.
         x = g.pos[:, 0].ravel()
         y = g.pos[:, 1].ravel()
+        
         x0,y0,x1,y1 = min(x)-_b,min(y)-_b,max(x)+_b,max(y)+_b
         
         np_ppos = np.array([[x0,y0],[x0,y1],[x1,y1],[x1,y0],[x0,y0]])
@@ -199,13 +270,8 @@ class MainPlotWindowHandler():
         cap_points = np.array([g.pos[0],g.pos[-1]])
         i_b = self.bounds_points_index
         
-        def dset(npa,tgt):
-            for i,np in enumerate(npa):
-                tgt[i_b+i] = np
-            return tgt
-        
-        self.bounds_pos = dset(np_ppos,self.bounds_pos)
-        self.bounds_adj = dset(np_adjs,self.bounds_adj)
+        self.bounds_pos = np.vstack((self.bounds_pos,np_ppos))
+        self.bounds_adj = np.vstack((self.bounds_adj,np_adjs))
         self.bounds_points_index += np_ppos.shape[0]
 
         i_b = self.bounds_points_index
@@ -217,9 +283,6 @@ class MainPlotWindowHandler():
         label.setPos(np_ppos[1][0],np_ppos[1][1])
         label.scale(1, -1)
         label.setParentItem(self.g_base)
-        # print(label.boundingRect())
-        # l = label.__class__
-        # for n in dir(l): print(n)
         
         self.g_base.setData(pos=pos_r, adj=adj_r, pen=off_pen, size=1, symbol='+', pxMode=False)
         
@@ -227,31 +290,26 @@ class MainPlotWindowHandler():
         caps.setData(pos=cap_points, pen=off_pen, brush=off_brush, symbolPen=None, size=[5,10], symbol=['+','x'], pxMode=False)
         caps.setParentItem(self.g_base) #subplots[subplot_index])
         
-    def add_subplot(self):
+        return True
         
-        #g = pg.GraphicsItem()
         
-        gA = pg.GraphItem()
-        gB = pg.GraphItem()
-        
-        #
-        # gA.setParentItem(g)
-        # gB.setParentItem(g)
-        #g.addItem(gA)
-        
-        self.plot.addItem(gA)
-        self.plot.addItem(gB)
-        #self.subplots.append(g)
-        
-        ee = self.plot.allChildItems()
-        self.subplots = [sp for sp in ee if 'GraphItem.GraphItem' in str(sp.__class__)][2:]
-        #self.subplot_index += 1
-        #return self.subplots[-1]
-        #def get_current_subplot
+    def add_subplot(self):   
+        gA = pg.GraphItem(name='one')
+        gB = pg.GraphItem(name='two')
+        gA.setParentItem(self.t_base)
+        gB.setParentItem(self.t_base)
+        ee = self.t_base.allChildItems()
+        self.subplots = [sp for sp in ee if 'GraphItem.GraphItem' in str(sp.__class__)] #[1:]
+        # for e,p in enumerate(self.subplots):
+        #     print(e,p)
+        # print('----')
 
+        
 class GraphUtil(object):
     def __init__(self, parent=None):
         self._subplot_pts = int(GRAPH_SUBPLOT_LEN)
+        self.subplotindex = 0
+        self.listindex = 0
         self.index = 0
         self.s_index = 0
         self._on_ind = 0
@@ -288,13 +346,6 @@ class GraphUtil(object):
         #TODO
         self.trace_points = [] #np.zeros([self._subplot_pts*2,2], dtype=int)
         
-        
-        
-    def log(self,logdata):
-        window.testTextBrowser.append(str(logdata))
-        self.parent.do_log(logdata)
-        #do_log
-    
     def closest_node(self, node, nodes):
         return nodes[cdist([node], nodes).argmin()]
         
@@ -306,125 +357,92 @@ class GraphUtil(object):
         MMM.arrow.setStyle(brush='r' if float(z) == 0 else 'k')
 
         try:
-            #TODO print(len(MMM.subplots), MMM.subplots_rst, MMM.subplot_index)
-            target_subplot = MMM.subplots[(MMM.subplots_rst+MMM.subplot_index)]
+            target_subplot = MMM.subplots[self.subplotindex]
         except Exception as exc:
             pass
-            
+        
         self.trace_points += [[float(x),float(y)]]
         pos = np.array(self.trace_points)
-        
-        #
-        # closest to what?
-        #
-        
-        # poses = MMM.s_pos[0:self.index]#self.tape[0:self._on_ind]
-        #
-        # if len(poses):
-        #
-        #     try:
-        #         d = np.array([float(x),float(y)])
-        #         cd = self.closest_node(d, poses)
-        #         i = np.where((poses == (cd[0], cd[1])).all(axis=1))
-        #         #print(np.amax(i))
-        #         self.trace_rad = np.amax(i)
-        #     except Exception as exc:
-        #         print(exc)
-        #         #return
-
-
-            
-
-        
-        
         target_subplot.setData(pos=pos, pen=None, symbol='o', symbolPen=None, symbolBrush=trace_brush, size=3.0, pxMode=False)
  
-        #return
-        
     def iterate(self, spec=None):
         #global AUTORUN
-
-        #if self.index < self.trace_rad: return
         
-        if self.index > MMM.points_count-1: 
-            self.parent.log('finished iterating')
-            self.parent.AUTORUN = False
-            return
-                
-        sta = int((self._subplot_pts-1)*(MMM.subplot_index-1))
-        
-        try:
-            target_subplot = MMM.subplots[MMM.subplot_index] #drawing to this one
-            #target_subplot = subplot.allChildItems()[0]
-            
-        except Exception as exc:
-            self.parent.log(exc)
-            self.parent.AUTORUN = False
-            return
-        
-        ind = self.index
-        sid = self.s_index
-        
-        pt0 = MMM.batch[ind]
-        pt1 = MMM.batch[ind-1]
-        
-        #if spec and ind > spec: return()
-        
-        
-        
-        if self.s_index == 0:
-            self.parent.log('starting subplot', MMM.subplot_index, sta)
-        
-        if pt0[6]: 
-            self.parent.messenger.setText(pt0[6])
-            #self.parent.tableWidget.resizeColumnToContents(7)
-        # print('---',self._on_ind)
-        # #print('B',pt1)
-        # print('A',pt0)
-        
-        # A [0 789.588 528.638 0.0 8000 2.4 '(start stroke 2)']
-        # effectively skipping lines w/comments
-        c = pt0[0] == 1 and not pt0[6]
-        
-        if c:
-            if pt1[0] == 0:# previous point has G0
-                x,y = MMM.s_pos[ind]
-                label = pg.LabelItem(('%i' % self._on_ind), color=on_color)
-                label.setPos(x,y)
-                label.scale(0.25, -0.25)
-                label.setParentItem(MMM.g_base)#target_subplot)
-            
-            self.tape[self._on_ind] = MMM.s_pos[ind]
-            if pt1[0] != 0: # either G1 or G4 w/out comment.
-                b = np.array([self._on_ind-1,self._on_ind])
-                self.tape_adj[self._on_ind] = b
-                
-            self._on_ind += 1
-            
-        pos = self.tape[0:self._on_ind]
-        adj = self.tape_adj[1:self._on_ind]
-        adj = adj[~np.all(adj == 0, axis=1)] #void any zeros
-        
-        try:
-            target_subplot.setData(pos=pos, adj=adj, pen=on_pen, symbol='x', size=0.5, pxMode=False)
-        except Exception as exc:
-            self.parent.log(("GRAPH ERROR",exc))
-
-        
-        if self.s_index == self._subplot_pts-1: 
-            if self.s_index: 
-                MMM.show_subplot_bounds(MMM.subplot_index)
-                MMM.subplot_index += 1
-                self.prepare()
-                
-            self.s_index = 0
-            self.index -= 1 #TODO RECENT ADDITION bc line getting lost scross subplot switch
-            
+        if self.index > MMM.points_count-2:
+            pass
         else:
-            self.s_index += 1
-            self.index += 1
+            
+            #self.parent.log(f'p{self.index} sp{self.subplotindex+1}')
+            
+            try:
+                target_subplot = MMM.subplots[self.subplotindex+1]
+            except Exception as exc:
+                MMM.add_subplot()
+                target_subplot = MMM.subplots[self.subplotindex+1]
+                #traceback.print_stack()
+                self.parent.log(exc)
+                #self.parent.AUTORUN = False
+                pass
+                #return
         
-        return
+            ind = self.index
+            sid = self.s_index
+            pt0 = MMM.batch[ind]
+            pt1 = MMM.batch[ind-1]
+        
+            if self.s_index == 0:
+                pass#self.parent.log(f'starting subplot{self.subplotindex+1}')
+            
+            if pt0[6]: 
+                self.parent.messenger.setText(pt0[6])
+            
+            # A [0 789.588 528.638 0.0 8000 2.4 '(start stroke 2)']
+            # effectively skipping lines w/comments
+            c = pt0[0] == 1 and not pt0[6]
+        
+            if c:
+                if pt1[0] == 0:# previous point has G0
+                    x,y = MMM.s_pos[ind]
+                    label = pg.LabelItem(('%i' % self._on_ind), color=on_color)
+                    label.setPos(x,y)
+                    label.scale(0.25, -0.25)
+                    label.setParentItem(MMM.g_base)#target_subplot)
+            
+                self.tape[self._on_ind] = MMM.s_pos[ind]
+                if pt1[0] != 0: # either G1 or G4 w/out comment.
+                    b = np.array([self._on_ind-1,self._on_ind])
+                    self.tape_adj[self._on_ind] = b
+                
+                self._on_ind += 1
+            
+            pos = self.tape[0:self._on_ind]
+            adj = self.tape_adj[1:self._on_ind]
+            adj = adj[~np.all(adj == 0, axis=1)] #void any zeros
+        
+            try:
+                target_subplot.setData(pos=pos, adj=adj, pen=on_pen, symbol='x', size=0.5, pxMode=False)
+            except Exception as exc:
+                self.parent.log(("GRAPH ERROR",exc))
+
+            if self.s_index == self._subplot_pts-1: 
+                if self.s_index: 
+                    #self.parent.log(f'stopping subplot{self.subplotindex+1}')
+                    try:
+                        isset = MMM.show_subplot_bounds(self.subplotindex+1)
+                    except Exception as err:
+                        print(err)
+                    
+                    self.subplotindex += 2
+                    self.prepare()
+            
+                    self.s_index = 0
+                    self.index -= 1 #TODO DUBIOUSNESS
+            
+            else:
+                self.s_index += 1
+                self.index += 1
+        
+            #return
         
         
         
@@ -459,8 +477,8 @@ class selecta(QComboBox):
     #     print(rect.topLeft())
     #     popup.move(rect.topLeft())
         # QComboBox::showPopup();
-#         QPoint pos = mapToGlobal(QPoint(0, height()));
-#         view()->parentWidget()->move(pos);
+    #         QPoint pos = mapToGlobal(QPoint(0, height()));
+    #         view()->parentWidget()->move(pos);
 
          
         
@@ -625,11 +643,19 @@ class MainWindow(QMainWindow):
         
 
         MACH.parent = self
-        
-        MMM.attach_plot(self.graphicsView)
         MMM.parent = self
-        MMM.init_plot(_args)
+        MMM.store_file_in_basic_args(_args)
+        MMM.attach_plot(self.graphicsView)
+        
+        
+        #MMM.re_slate()
+        #MMM.add_gcode_file()
+        
+        
         MMM.marks = True
+
+
+
 
         GRA.prepare()
         GRA.set_tape()
@@ -699,7 +725,7 @@ class MainWindow(QMainWindow):
         
         pass
 
-    def log(self, *args):     
+    def log(self, *args):
         self.log_table.log(*args)
         #print(args)
 
@@ -763,7 +789,8 @@ class MainWindow(QMainWindow):
                 'main':{
                     'goto zero':{'f':'go to zero','k':'X'},
                     'set zero':{'f':'set zero position','k':'Z'},
-                    'init':{'f':'init machine','k':'I'},
+                    'probe':{'f':'make machine probe','k':'P'},
+                    'register':{'f':'run registration routine','k':'R'},
                 },
                 'menu':True,
                 'column':6,
@@ -773,6 +800,7 @@ class MainWindow(QMainWindow):
                     'auto':{'f':'auto run graphui','k':'A'},
                     'wipe':{'f':'clear it all out','k':'W'},
                     'marks':{'f':'toggle subplot bounds and numbers','k':'W','c':True},
+                    'save':{'f':'save file lex one time.','k':'S'},
                 },
                 'menu':True,
                 'column':7,
@@ -851,7 +879,7 @@ class MainWindow(QMainWindow):
         
         flit = selecta(self)
         flit.setObjectName('module_selecta')
-        flit.addItems(["module", "numbers", "G0 (move to)", "circles", "texture", "text"])
+        flit.addItems(["module", "numbers", "G0 (move to)", "circles", "texture", "word"])
         self.tableWidget.setCellWidget(2 , 8, flit)
         self.module_selecta = flit
         
@@ -873,6 +901,12 @@ class MainWindow(QMainWindow):
     def open_vars_tree(self):
         
         iv = self.vars_tree.isVisible()
+        
+        if iv:
+            self.log('Reloaded LDLF MAIN')
+            LDLF.load_plist(plistPath())
+            LDLF.load_to_globals(globals(),('MAIN',))
+
         self.vars_tree.setVisible(not iv)
         #self.log_table.lower()
         #self.vars_tree.raise()
@@ -922,15 +956,11 @@ class MainWindow(QMainWindow):
         return super(MainWindow, self).eventFilter(obj, event)
     
     def iterate(self,spec=None):
-        #TODO YOU DID IT!
-        #if self.AUTORUN:
+        #YOU DID IT!
         if MACH.delivering: GRA.iterate(spec)
-        #return
 
     def machine_trace(self):
-        #if self.AUTORUN:
         GRA.machine_trace()
-        #return
         
     def update_frame(self):
         try:
@@ -967,32 +997,84 @@ class MainWindow(QMainWindow):
         loop.stop()
         self.log("asyncio loop.stop.")
 
-
-
-    def plotClicked(self, evt, x, y):
+    def plotClicked(self, evt, x, y, delta=None):
         
         #self.parent.user_location.setText(f'Clicked ({x},{y})')
-        print(evt, x, y)
+        #print(evt, x, y)
         
         if self.module_selecta.index == 1: #for "numbers"
+        
             f = characters.SAC_TEXT(position=[x,y], alignment='center')
-            f.write((f'{self.plot_click_interactions_count}',),2.0,'bold')
+            f.write((f'{self.plot_click_interactions_count}',),10.0,'bold')
+            
             rew = bgc.line(f.lines_all,0)
-            MACH.reset_delivery()
+            MMM.add_gcode_points(rew)
+            #MACH.reset_delivery()
+            
             MACH.load_gcode(rew)
+            
             MACH.delivering = True
+            
             self.lineEdit.setText(f'delivering module. ({self.plot_click_interactions_count})')
+        
             
         elif self.module_selecta.index == 2: #for "G0 %s"          
             cmd = 'G0 X%4.3f Y%4.3f Z0 F%i' % (x,y,SEEK_RATE)
             self.lineEdit.setText(cmd)
             self.mach_cmd()
         
-        self.plot_click_interactions_count += 1
         
+        elif self.module_selecta.index == 3: #for "circles"
+            #print('delta',delta)
+            
+            if delta:
+                a = (x,y)
+                b = delta
+                MOD_ARC['ray'] = np.array([a,b])
+                codez = circles.circle_arc(**MOD_ARC)
+                rew = bgc.line([codez],0)
+                #print(len(codez),codez[0])
+                #rew = bgc.line(codez,0)
+                MMM.add_gcode_points(rew)
+                MACH.load_gcode(rew)
+                MACH.delivering = True
+
+        
+        elif self.module_selecta.index == 4: #for "texture"            
+            MOD_TEXTURE['pos'] = [x,y]
+            codez = textures.texture(**MOD_TEXTURE)
+            rew = bgc.line(codez,0)
+            MMM.add_gcode_points(rew)
+            MACH.load_gcode(rew)
+            MACH.delivering = True
+        
+        if self.module_selecta.index == 5: #for "word"
+        
+            f = characters.SAC_TEXT(position=[x,y], alignment='center')
+            f.write((f'{self.plot_click_interactions_count}',),10.0,'bold')
+            
+            rew = bgc.line(f.lines_all,0)
+            MMM.add_gcode_points(rew)
+            #MACH.reset_delivery()
+            
+            MACH.load_gcode(rew)
+            
+            MACH.delivering = True
+            
+            self.lineEdit.setText(f'delivering module. ({self.plot_click_interactions_count})')
+            
+            
+            
+            
+            
+            
+        self.plot_click_interactions_count += 1
 
     def moduleChange(self,index,name):
         #self.module_selecta
+        #reload variables here
+        
+        
         print(index,name)
     
     def menu_action_hover(self,q):
@@ -1019,14 +1101,22 @@ class MainWindow(QMainWindow):
             MACH.cmd = SET_ZERO
         elif q.text() == 'goto zero':
             MACH.cmd = GOTO_ZERO
-        elif q.text() == 'init':
+        elif q.text() == 'probe':
             MACH.cmd = INIT_DEPTH
+        elif q.text() == 'register':
+            self.mach_registration()
         elif q.text() == 'check':
             self.mach_check()
         elif q.text() == 'auto':
             self.AUTORUN = not self.AUTORUN
         elif q.text() == 'wipe':
             self.basic_reset()
+        elif q.text() == 'save':
+            #self.basic_reset()
+            with open(SAVE_FILE,'w+') as fe:
+                for l in MMM.file_raw:
+                    fe.write(f'{l}\n')
+                self.log(f'Saved ({len(MMM.file_raw)}) lines to {SAVE_FILE}.')        
         elif q.text() == 'marks':
             MMM.marks = not MMM.marks
             if MMM.marks:
@@ -1038,12 +1128,34 @@ class MainWindow(QMainWindow):
             key = str(q.text())[-1]
             x,y = [[0,0],[-1,1],[0,1],[1,1],[-1,0],[0,0],[1,0],[-1,-1],[0,-1],[1,-1]][int(key)]
             
-            mx,my,mz = [float(a) for a in MACH.status[2].split(',')] #s,m,w,b,r
+            if int(key) == 0:
+                mx,my,mz = [float(a) for a in MACH.status[1].split(',')] #s,m,w,b,r
+                mz = 0.0
+            else:
+                mx,my,mz = [float(a) for a in MACH.status[1].split(',')] #s,m,w,b,r
             
             MACH.delivering = False
-            cmd = f'G0 X{mx+x*10} Y{my+y*10} Z0 F{SEEK_RATE}'
+            cmd = f'G0 X{mx+x*10} Y{my+y*10} Z{mz} F{SEEK_RATE}'
             self.lineEdit.setText(cmd)
             self.mach_cmd()
+            
+            
+    def mach_registration(self):
+        point_set = [[X_PAGE,0],[X_PAGE,Y_PAGE],[0,Y_PAGE],[0,0]]
+        crosshair_size_mm = 5.0
+        plush = np.array([[-1,0],[1,0],[0,0],[0,-1],[0,1]])*crosshair_size_mm
+        
+        for i,center in enumerate(point_set):
+            point_set[i] = (np.array(center) + plush).tolist()
+        
+        rew = bgc.line(point_set,0)
+        MMM.add_gcode_points(rew)
+        
+        MACH.load_gcode(rew)
+        MACH.delivering = True
+        
+        #print(point_set)
+        pass
             
     #THIS
     def mach_connect(self):
@@ -1069,6 +1181,7 @@ class MainWindow(QMainWindow):
     #THIS
     def mach_load(self):
         self.log('MACH','def ƒ',__name__,inspect.stack()[0][3])
+        #MMM.add_gcode_file()
         MACH.load_gcode(MMM.file_raw)
         MACH.delivering = False
         
@@ -1087,58 +1200,6 @@ class MainWindow(QMainWindow):
 
     
 """ROOT FUNCTIONS [ƒ]"""
-#prepare file sources from _args return file(s)_to_print[] autonome ƒ
-def prepare_source(_args):
-    print(sys.path[0],__file__,__name__)
-    file_sources = []
-    files_to_print = []
-    extension = 'gcode'
-    skip_exts = ["session", ".ai", ".png", ".jpg"]
-
-    if _args.file: 
-        PATH = _args.file
-        
-        if os.path.exists(PATH):
-            if os.path.isfile(PATH):
-                file_sources += [PATH]
-            else:
-                file_sources += [file for file in os.listdir(PATH) if not any(x in file for x in skip_exts)]
-                #os.path.join(PATH,file)
-                file_ordered = sorted(file_sources,key=lambda x: int(os.path.splitext(x)[0]))
-                file_sources = [os.path.join(PATH,file) for file in file_ordered]
-        else:
-            print('path no found:',PATH)
-            exit()
-
-        
-        for f_PATH in file_sources:
-            CONVERT_SVG = False if '.gcode' in f_PATH or '.txt' in f_PATH else True
-            f_PATH_abs = os.path.join(os.getcwd(),f_PATH)
-            
-            files_to_print += [gcodeParser.svg_to_gcode(f_PATH_abs, _args) if CONVERT_SVG else f_PATH_abs]
-            print('file:', f_PATH, f_PATH_abs, CONVERT_SVG)
-            
-        if _args.session:
-            #//assumes sources in same directory
-            session_file_path = os.path.join(os.getcwd(),PATH,'session.gcode')
-            with open(session_file_path,'w+') as file:
-                file.truncate(0)
-                for f in files_to_print:
-                    with open(f) as cmd_block:
-                        file.write(cmd_block.read()+'\n\n')
-            
-            files_to_print = [session_file_path]
-            print('session:', session_file_path)
-            
-    else:    
-        print('no path provided. opening module.')
-        #exit()
-        
-    
-    return files_to_print
-
-   
-    
 
 """ROOT INSTANCES [ƒ]"""
 MMM = MainPlotWindowHandler()

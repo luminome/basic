@@ -12,12 +12,13 @@
         "MACH_PATH": "/Users/sac/Sites/afsolo/printer/modules/mach.py",
         "RANDY_MULTIPLEX": 10,
         "STATUS_DELAY": 0.1,
-        "STATUS_POS": "W",
-        "BUFFER_DELAY": 0.01
+        "STATUS_POS": "M",
+        "BUFFER_DELAY": 0.25
     },
     "GRBL": {
-        "FEED_RATE": 2000,
-        "SEEK_RATE": 4000,
+        "CONGRATES": "True",
+        "FEED_RATE": 4000,
+        "SEEK_RATE": 10000,
         "PAUSE_ONE": 0.2,
         "PAUSE_TWO": 2.4,
         "Z_DEPTH": 4.0,
@@ -32,7 +33,7 @@
             "G90 G0 Z0"
         ],
         "INIT_DEPTH": [
-			"G1 Z4 F4000",
+            "G1 Z4 F4000",
             "G4 P2.0",
             "G0 Z0",
             "G1 Z4",
@@ -41,17 +42,30 @@
         ]
     },
     "MAIN": {
-        "X_PAGE": 1800,
+        "X_PAGE": 1000,
         "Y_PAGE": 1000,
-        "GRAPH_SUBPLOT_LEN": 500,
+        "GRAPH_SUBPLOT_LEN": 30,
         "ROOT_ABS_PATH": "/Users/sac/Sites/afsolo",
         "CHARDATA_N": "UI/static/charmap.txt",
-        "CHARDATA_B": "UI/static/charmap-bold.txt"
-    },
-    "TEST": {
-        "G": "Wader, there's a fly in my soup.",
-        "A": "How this trial should proceed.",
-        "B": "Taking a position on impeachment."
+        "CHARDATA_B": "UI/static/charmap-bold.txt",
+        "SAVE_FILE": "UI/static/save.cgode",
+        "MOD_TEXT": {
+            "SCALE": 1.0,
+            "STYLE": "bold"
+        },
+        "MOD_ARC": {
+            "height": 40.0,
+            "resolution": 0.05
+        },
+        "MOD_TEXTURE": {
+            "diam": 120,
+            "wmax": 1.0,
+            "wmin": 0.2,
+            "style": "lines",
+            "pitch": 10,
+            "angle": 60.0,
+            "ost": 1.0
+        }
     },
     "VARS": {
         "Two": {

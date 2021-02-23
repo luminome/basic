@@ -15,7 +15,6 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5 import uic
 
-# TODO YES
 import numpy as np
 import pyqtgraph as pg 
 
@@ -33,14 +32,11 @@ from serialAsyncGrbl import ser_async_grbl
 
 from plistLoader import PlistLoader, plistPath
 
-#from modules import characters
-
 import basicGcodeCmds as bgc
 
 from modules import circles, textures, characters
 
 LDLF = PlistLoader(plistPath())
-
 LDLF.load_to_globals(globals(),('MACH','GRBL','MAIN'))
 
 _parser = argparse.ArgumentParser(description='draw-layout-from-gcode')
@@ -68,8 +64,10 @@ trace_brush = pg.mkBrush(color=trace_color)
 
 """ROOT CLASSES [ƒ]"""
 class MainPlotWindowHandler():
-    """creates file_raw(gcode) and batch(something else instruction)
-    refer to gcodeparser for else instructions"""
+    """
+    creates file_raw(gcode) and batch(something else instruction)
+    refer to gcodeparser for else instructions
+    """
     
     def __init__(self, parent = None):
         #print(args)
@@ -94,7 +92,6 @@ class MainPlotWindowHandler():
         self.marks = True
         self.clickpos = []
         self.loaded_file = None
-        
         
     def re_slate(self):
         #for cplot in self.plot.allChildItems(): self.plot.removeItem(cplot)
@@ -140,7 +137,6 @@ class MainPlotWindowHandler():
         
         self.add_subplot()
         self.parent.log(f'initial subplots {len(self.subplots)}')
-        
         
     def show_mach_location(self):
         npos = np.array([[-1,0],[1,0],[0,-1],[0,1]],dtype=float)
@@ -203,7 +199,8 @@ class MainPlotWindowHandler():
     def store_file_in_basic_args(self, init_args):
         self.source_path = self.prepare_source(init_args)
         self.parent.log(init_args)
-        self.parent.log(f'SRC PATH: {self.source_path[0]}')
+        self.parent.log(f'SRC PATH: {self.source_path}')
+        return True
         #then can add_gcode_points from this source
 
     #prepare file sources from _args return file(s)_to_print[] autonome ƒ
@@ -292,7 +289,6 @@ class MainPlotWindowHandler():
         
         return True
         
-        
     def add_subplot(self):   
         gA = pg.GraphItem(name='one')
         gB = pg.GraphItem(name='two')
@@ -303,8 +299,7 @@ class MainPlotWindowHandler():
         # for e,p in enumerate(self.subplots):
         #     print(e,p)
         # print('----')
-
-        
+    
 class GraphUtil(object):
     def __init__(self, parent=None):
         self._subplot_pts = int(GRAPH_SUBPLOT_LEN)
@@ -443,13 +438,10 @@ class GraphUtil(object):
                 self.index += 1
         
             #return
-        
-        
-        
-        
-class selecta(QComboBox):
+                
+class Selecta(QComboBox):
     def __init__(self, parent = None):
-        super(selecta, self).__init__(parent)
+        super(Selecta, self).__init__(parent)
         self.index = None
         self.parent = parent
       
@@ -480,8 +472,6 @@ class selecta(QComboBox):
     #         QPoint pos = mapToGlobal(QPoint(0, height()));
     #         view()->parentWidget()->move(pos);
 
-         
-        
 class NewLabel(QLabel):
     def __init__(self, label_text, label_action=None):
         QLabel.__init__(self)
@@ -503,7 +493,6 @@ class NewLabel(QLabel):
         self.setProperty("mandatoryField", self.is_selcted())
         self.setStyle(self.style())
         self.setText(self.baseText[:-1]+pchr)
-       
         #print('triggered',w)
         
     def enterEvent(self, event):
@@ -535,39 +524,27 @@ class FancyOverlay(QTableWidget):
         self.horizontalHeader().setStretchLastSection(True)
         self.setSelectionMode(QAbstractItemView.NoSelection) # .NoSelection .MultiSelection)
         self.setMouseTracking(True)
-        #self.setProperty("mandatoryField", True)
-        # self.verticalScrollBar().setDisabled(True);
-        # self.horizontalScrollBar().setDisabled(True);
-        #self.FONT = QFont('Monaco', 10)
         self.AUTO_scroll = True
         self.compressed_state = False
         self.currentheight = 0
-        self.rowheight = 20 #int(self.FONT.pointSize()+(self.FONT.pointSize()*0.2))
+        self.rowheight = 20
         self.setObjectName('logWidget')
         self.verticalHeader().setDefaultSectionSize(10);
-        
         #self.setShowGrid(False)
         
     def enterEvent(self, event):
         self.AUTO_scroll = False
         self.setStyle(self.style())
         pass
-        #print(self.text(),'entered')
 
     def leaveEvent(self, event):
         self.AUTO_scroll = True
         pass
-        #print(self.text(),'left')
     
     def mousePressEvent(self, event):
         self.toggle()
+        pass
         
-        # window.menu_action_click(self.actions()[0])
-        # chk = self.actions()[0].isChecked()
-        # self.actions()[0].setChecked(not chk)
-        # self.refresh(not chk)
-        # return super().mousePressEvent(event)
-    
     def toggle(self):
         self.compressed_state = not self.compressed_state
         
@@ -590,12 +567,8 @@ class FancyOverlay(QTableWidget):
             rowPosition = self.rowCount()
             self.insertRow(rowPosition)
             if n == 0: self.setItem(rowPosition , 0, QTableWidgetItem(init_time_fmt))
-    
             rc = QTableWidgetItem(str(l))
-            #rc.setContentsMargins(0, 0, 0, 0)
-            #print(l)
             self.setItem(rowPosition , 1, rc)
-            #c = self.FONT.pointSize()
             self.setRowHeight(rowPosition, self.rowheight)
         
         if self.AUTO_scroll: self.scrollToBottom()
@@ -621,7 +594,7 @@ class MainWindow(QMainWindow):
         with open(qss,"r") as fh:
           ft = fh.read()
           self.spec_style_sheet = ft
-        #
+
         self.setStyleSheet(self.spec_style_sheet)
         # self.setAutoFillBackground(True)
 
@@ -632,7 +605,6 @@ class MainWindow(QMainWindow):
         
         self.vars_tree = VarsWidget(self)
         self.vars_tree.hide()
-        #self.LDL = PopListMainWindow(parent=self)
         
         self.setContentsMargins(0, 0, 0, 0)
         self.statusBar().showMessage('Message in statusbar.')
@@ -640,27 +612,18 @@ class MainWindow(QMainWindow):
         self.AUTORUN = False
         self.tsec = 0
         self.frame = 0
-        
 
         MACH.parent = self
         MMM.parent = self
-        MMM.store_file_in_basic_args(_args)
+        
         MMM.attach_plot(self.graphicsView)
-        
-        
-        #MMM.re_slate()
-        #MMM.add_gcode_file()
-        
+        MMM.store_file_in_basic_args(_args)
         
         MMM.marks = True
-
-
-
 
         GRA.prepare()
         GRA.set_tape()
         GRA.parent = self
-        
         
         self.progressBar.setValue(0)
         self.progressBar.setStyleSheet(self.spec_style_sheet)
@@ -677,7 +640,6 @@ class MainWindow(QMainWindow):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(0)
-        
         
         rowCount = 6
         columnCount = 6
@@ -703,9 +665,7 @@ class MainWindow(QMainWindow):
         self.tableWidget.verticalScrollBar().setDisabled(True);
         self.tableWidget.horizontalScrollBar().setDisabled(True);
         self.tableWidget.horizontalHeader().setStretchLastSection(True)
-
-
-
+        
         self.checkStatsMenu.triggered.connect(self.log)        
         self.UiComponents()
         self.setObjectName('basic')
@@ -732,89 +692,8 @@ class MainWindow(QMainWindow):
     # method for menu and table control components 
     def UiComponents(self): 
         ##Derive a custom class from QLabel implementing handlers for mouse events.
-        
-        self.actions = {
-            'machine':{
-                'main':{
-                    'connect':{'f':'connect','k':'C'},
-                    'start':{'f':'start'},
-                    'stop':{'f':'stop'},
-                    'load':{'f':'load'},
-                },
-                'menu':True,
-                'column':0,
-                
-            },
-            'wind':{
-                'main':{
-                    'vars':{'f':'toggle vars list view.','k':'D','c':False},
-                    'log status':{'f':'show grbl status in log','c':False},
-                    'log grbl':{'f':'show grbl messages in log','c':True},
-                    'check':{'f':'show machine information'},
-                },
-                'menu':True,
-                'column':1,
-            },
-            'kpad_1':{
-                'main':{
-                    '1':{'f':'keypad1','ke':'1'},
-                    '4':{'f':'keypad4','ke':'2'},
-                    '7':{'f':'keypad7','k':'3'},
-                    '-':{'f':'keypadNeg','k':'4'},
-                },
-                'menu':False,
-                'column':2,
-            },
-            'kpad_2':{
-                'main':{
-                    '2':{'f':'keypad2','k':'1'},
-                    '5':{'f':'keypad5','k':'2'},
-                    '8':{'f':'keypad8','k':'3'},
-                    '0':{'f':'keypad0','k':'4'},
-                },
-                'menu':False,
-                'column':3,
-            },
-            'kpad_3':{
-                'main':{
-                    '3':{'f':'keypad3','k':'1'},
-                    '6':{'f':'keypad6','k':'2'},
-                    '9':{'f':'keypad9','k':'3'},
-                    '+':{'f':'keypadPos','k':'4'},
-                },
-                'menu':False,
-                'column':4,
-            },
-            'commands':{
-                'main':{
-                    'goto zero':{'f':'go to zero','k':'X'},
-                    'set zero':{'f':'set zero position','k':'Z'},
-                    'probe':{'f':'make machine probe','k':'P'},
-                    'register':{'f':'run registration routine','k':'R'},
-                },
-                'menu':True,
-                'column':6,
-            },
-            'basic':{
-                'main':{
-                    'auto':{'f':'auto run graphui','k':'A'},
-                    'wipe':{'f':'clear it all out','k':'W'},
-                    'marks':{'f':'toggle subplot bounds and numbers','k':'W','c':True},
-                    'save':{'f':'save file lex one time.','k':'S'},
-                },
-                'menu':True,
-                'column':7,
-            }
-        }
-        
-        
-        
-        
+        self.actions = ACTIONS
         bar = self.menuBar()
-        
-        
-        
-        
         
         for c,n in enumerate(self.actions):
             c_col = self.actions[n]['column']
@@ -877,19 +756,14 @@ class MainWindow(QMainWindow):
         self.tableWidget.setCellWidget(1 , 8, flit)
         self.user_location = flit
         
-        flit = selecta(self)
+        flit = Selecta(self)
         flit.setObjectName('module_selecta')
         flit.addItems(["module", "numbers", "G0 (move to)", "circles", "texture", "word"])
         self.tableWidget.setCellWidget(2 , 8, flit)
         self.module_selecta = flit
         
-        #self.module_selecta.parent = self 
-        
         for c in range(0,self.tableWidget.columnCount()):
             self.tableWidget.resizeColumnToContents(c)
-
-
-    
 
     def auto_run(self):
         global AUTORUN
@@ -899,17 +773,13 @@ class MainWindow(QMainWindow):
         log('Test Button Clicked.', 'AUTORUN:%s'%AUTORUN)
     
     def open_vars_tree(self):
-        
         iv = self.vars_tree.isVisible()
-        
         if iv:
             self.log('Reloaded LDLF MAIN')
             LDLF.load_plist(plistPath())
             LDLF.load_to_globals(globals(),('MAIN',))
 
         self.vars_tree.setVisible(not iv)
-        #self.log_table.lower()
-        #self.vars_tree.raise()
                         
     def controlWidgetResizeEvent(self,event):
         s = self.size()
@@ -1081,9 +951,10 @@ class MainWindow(QMainWindow):
           self.statusBar().showMessage(q.toolTip())
     
     def menu_action_click(self,q):
+        #print(inspect.stack())
         #self.log('ACTION: %s %s' % (q.text(), q.isChecked()) )
         if q.text() == 'connect':
-            q.setEnabled(False)
+            #q.setEnabled(False)
             self.mach_connect()
         elif q.text() == 'start':
             self.mach_start()
@@ -1166,7 +1037,6 @@ class MainWindow(QMainWindow):
         
     #THIS
     def mach_start(self):
-        #MACH.run_state('UNLOCK')
         self.log('MACH','def ƒ',__name__,inspect.stack()[0][3])
         MACH.delivering = True
         MACH.cmd = '~'
@@ -1181,7 +1051,7 @@ class MainWindow(QMainWindow):
     #THIS
     def mach_load(self):
         self.log('MACH','def ƒ',__name__,inspect.stack()[0][3])
-        #MMM.add_gcode_file()
+        MMM.add_gcode_file()
         MACH.load_gcode(MMM.file_raw)
         MACH.delivering = False
         
@@ -1196,10 +1066,6 @@ class MainWindow(QMainWindow):
         cmd_txt = self.lineEdit.text()
         MACH.cmd = str(cmd_txt).strip()
         
-        
-
-    
-"""ROOT FUNCTIONS [ƒ]"""
 
 """ROOT INSTANCES [ƒ]"""
 MMM = MainPlotWindowHandler()
@@ -1215,7 +1081,6 @@ if __name__ == '__main__':
     app.setFont(FONT)
     app.setApplicationName("basic")
     window = MainWindow()
-    
     window.log('Initialized')
     
     loop = QEventLoop(app)

@@ -121,8 +121,7 @@ class ser_async_grbl(object):
             
             self.TX.write(b'?')
             self.clock += 1
-            await self.TX.drain()
-
+            #await self.TX.drain()
             # if self.state == 'sent-batch':
             #     if self.status:
             #         s,m,w,b,r = self.status
@@ -236,7 +235,7 @@ class ser_async_grbl(object):
                             self.bc.append(len(block)+1)
                             self.TX.write((block+'\n').encode('utf-8'))
                             
-                            await self.TX.drain()
+                            #await self.TX.drain()
                             if self.log_grbl: self.log("tx: ( %03i / %i ) g%03i \'%s\'" % (self.lc,self.gcl,self.gc,block))
                             self.lc += 1
                             

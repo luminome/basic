@@ -1,4 +1,205 @@
 {
+    "MAIN": {
+        "X_PAGE": 1400,
+        "Y_PAGE": 1000,
+        "GRAPH_SUBPLOT_LEN": 200,
+        "GRID_SPACING": 100.0,
+        "ROOT_ABS_PATH": "/Users/sac/Sites/basic",
+        "CHARDATA_N": "UI/static/charmap.txt",
+        "CHARDATA_B": "UI/static/charmap-bold.txt",
+        "WORDS_FILE": "UI/static/words.txt",
+        "SAVE_FILE": "UI/static/save.cgode",
+        "MOD_TEXT": {
+            "scale": 4.0,
+            "style": "bold",
+            "alignment": "center",
+            "angle": 0,
+            "spacing": 1.0
+        },
+        "MOD_POLY": {
+            "sides":3,
+			"scale": 1.0,
+			"d":1.0
+        },
+        "MOD_ARC": {
+            "height": 40.0,
+            "resolution": 0.05
+        },
+        "MOD_TEXTURE": {
+            "diam": 200,
+            "wmax": 1.0,
+            "wmin": 0.2,
+            "style": "dust",
+            "pitch": 25,
+            "angle": 0,
+            "ost": 0
+        },
+        "ACTIONS": {
+            "machine": {
+                "main": {
+                    "connect": {
+                        "f": "connect",
+                        "k": "C"
+                    },
+                    "start": {
+                        "f": "start"
+                    },
+                    "stop": {
+                        "f": "stop"
+                    },
+                    "load": {
+                        "f": "load"
+                    }
+                },
+                "menu": 1,
+                "column": 0
+            },
+            "wind": {
+                "main": {
+                    "vars": {
+                        "f": "toggle vars list view.",
+                        "k": "D",
+                        "c": false
+                    },
+                    "log status": {
+                        "f": "show grbl status in log",
+                        "c": false
+                    },
+                    "log grbl": {
+                        "f": "show grbl messages in log",
+                        "c": true
+                    },
+                    "check": {
+                        "f": "show machine information"
+                    }
+                },
+                "menu": 1,
+                "column": 1
+            },
+            "kpad_1": {
+                "main": {
+                    "1": {
+                        "f": "keypad1",
+                        "ke": "1"
+                    },
+                    "4": {
+                        "f": "keypad4",
+                        "ke": "2"
+                    },
+                    "7": {
+                        "f": "keypad7",
+                        "k": "3"
+                    },
+                    "-": {
+                        "f": "keypadNeg",
+                        "k": "4"
+                    }
+                },
+                "menu": 0,
+                "column": 2
+            },
+            "kpad_2": {
+                "main": {
+                    "2": {
+                        "f": "keypad2",
+                        "k": "1"
+                    },
+                    "5": {
+                        "f": "keypad5",
+                        "k": "2"
+                    },
+                    "8": {
+                        "f": "keypad8",
+                        "k": "3"
+                    },
+                    "0": {
+                        "f": "keypad0",
+                        "k": "4"
+                    }
+                },
+                "menu": 0,
+                "column": 3
+            },
+            "kpad_3": {
+                "main": {
+                    "3": {
+                        "f": "keypad3",
+                        "k": "1"
+                    },
+                    "6": {
+                        "f": "keypad6",
+                        "k": "2"
+                    },
+                    "9": {
+                        "f": "keypad9",
+                        "k": "3"
+                    },
+                    "+": {
+                        "f": "keypadPos",
+                        "k": "4"
+                    }
+                },
+                "menu": 0,
+                "column": 4
+            },
+            "commands": {
+                "main": {
+                    "goto zero": {
+                        "f": "go to zero",
+                        "k": "X"
+                    },
+                    "set zero": {
+                        "f": "set zero position",
+                        "k": "Z"
+                    },
+                    "probe": {
+                        "f": "make machine probe",
+                        "k": "P"
+                    },
+                    "register": {
+                        "f": "run registration routine",
+                        "k": "R"
+                    }
+                },
+                "menu": 1,
+                "column": 6
+            },
+            "basic": {
+                "main": {
+                    "auto": {
+                        "f": "auto run graphui",
+                        "k": "A"
+                    },
+                    "wipe": {
+                        "f": "clear it all out",
+                        "k": "W"
+                    },
+                    "marks": {
+                        "f": "toggle subplot bounds and numbers",
+                        "k": "W",
+                        "c": true
+                    },
+                    "save": {
+                        "f": "save file lex one time.",
+                        "k": "S"
+                    }
+                },
+                "menu": 1,
+                "column": 7
+            },
+            "graphic": {
+                "main": {
+                    "grid": {
+                        "f": "set grid",
+                        "k": "G",
+                        "c": true
+                    }
+                },
+                "menu": 1,
+                "column": 8
+            }
+        }
+    },
     "MACH": {
         "RX_BUFFER_SIZE": 128,
         "MAX_BAUD_RATE": 115200,
@@ -17,8 +218,8 @@
     },
     "GRBL": {
         "CONGRATES": "True",
-        "FEED_RATE": 4000,
-        "SEEK_RATE": 10000,
+        "FEED_RATE": 2000,
+        "SEEK_RATE": 4000,
         "PAUSE_ONE": 0.2,
         "PAUSE_TWO": 2.4,
         "Z_DEPTH": 4.0,
@@ -40,104 +241,6 @@
             "G4 P2.0",
             "G0 Z0"
         ]
-    },
-    "MAIN": {
-        "X_PAGE": 1000,
-        "Y_PAGE": 1000,
-        "GRAPH_SUBPLOT_LEN": 30,
-        "ROOT_ABS_PATH": "/Users/sac/Sites/basic",
-        "CHARDATA_N": "UI/static/charmap.txt",
-        "CHARDATA_B": "UI/static/charmap-bold.txt",
-        "SAVE_FILE": "UI/static/save.cgode",
-        "MOD_TEXT": {
-            "SCALE": 1.0,
-            "STYLE": "bold"
-        },
-        "MOD_ARC": {
-            "height": 40.0,
-            "resolution": 0.05
-        },
-        "MOD_TEXTURE": {
-            "diam": 96,
-            "wmax": 1.0,
-            "wmin": 0.2,
-            "style": "circles",
-            "pitch": 6,
-            "angle": 60.0,
-            "ost": -10.0
-        },
-		"ACTIONS":{
-            "machine":{
-                "main":{
-                    "connect":{"f":"connect","k":"C"},
-                    "start":{"f":"start"},
-                    "stop":{"f":"stop"},
-                    "load":{"f":"load"}
-                },
-                "menu":1,
-                "column":0
-            },
-            "wind":{
-                "main":{
-                    "vars":{"f":"toggle vars list view.","k":"D","c":false},
-                    "log status":{"f":"show grbl status in log","c":false},
-                    "log grbl":{"f":"show grbl messages in log","c":true},
-                    "check":{"f":"show machine information"}
-                },
-                "menu":1,
-                "column":1
-            },
-            "kpad_1":{
-                "main":{
-                    "1":{"f":"keypad1","ke":"1"},
-                    "4":{"f":"keypad4","ke":"2"},
-                    "7":{"f":"keypad7","k":"3"},
-                    "-":{"f":"keypadNeg","k":"4"}
-                },
-                "menu":0,
-                "column":2
-            },
-            "kpad_2":{
-                "main":{
-                    "2":{"f":"keypad2","k":"1"},
-                    "5":{"f":"keypad5","k":"2"},
-                    "8":{"f":"keypad8","k":"3"},
-                    "0":{"f":"keypad0","k":"4"}
-                },
-                "menu":0,
-                "column":3
-            },
-            "kpad_3":{
-                "main":{
-                    "3":{"f":"keypad3","k":"1"},
-                    "6":{"f":"keypad6","k":"2"},
-                    "9":{"f":"keypad9","k":"3"},
-                    "+":{"f":"keypadPos","k":"4"}
-                },
-                "menu":0,
-                "column":4
-            },
-            "commands":{
-                "main":{
-                    "goto zero":{"f":"go to zero","k":"X"},
-                    "set zero":{"f":"set zero position","k":"Z"},
-                    "probe":{"f":"make machine probe","k":"P"},
-                    "register":{"f":"run registration routine","k":"R"}
-                },
-                "menu":1,
-                "column":6
-            },
-            "basic":{
-                "main":{
-                    "auto":{"f":"auto run graphui","k":"A"},
-                    "wipe":{"f":"clear it all out","k":"W"},
-                    "marks":{"f":"toggle subplot bounds and numbers","k":"W","c":true},
-                    "save":{"f":"save file lex one time.","k":"S"}
-                },
-                "menu":1,
-                "column":7
-            }
-        }
     },
     "VARS": {
         "Two": {

@@ -124,7 +124,7 @@ class VarsWidget(QTreeWidget):
                 elif isinstance(d_obj, list):
                     #if len(d_obj) > 1: 
                         
-                    if kva: 
+                    if len(str(kva)) > 0: 
                         i = klist[n+1]
                         if i > len(d_obj)-1:
                             d_obj.append(kva)
@@ -135,7 +135,7 @@ class VarsWidget(QTreeWidget):
                     #return d_obj
                 else:
                     
-                    if kva: obj[klist[n]] = kva
+                    if len(str(kva)) > 0: obj[klist[n]] = kva
                     #self.slog("HERE!",obj[klist[n]])
                     return obj
             

@@ -25,7 +25,7 @@ def probe_hold_depth(xf,yf,PAUSE=PAUSE_ONE,pulses=1):
     
 def line(points_list, ct=0):
     _cmd = []
-    print(type(points_list))
+    #print(type(points_list))
     for p,points in enumerate(points_list):
         x,y = points[0]
         _cmd += [f'(line {ct}.{p})']
@@ -33,8 +33,8 @@ def line(points_list, ct=0):
         _cmd += ["G1 Z%i F%i" % (Z_DEPTH, FEED_RATE)]
         _cmd += ["G4 P%1.1f" % PAUSE_ONE]
         for vertex in points[1:]: _cmd += ["G1 X%4.3f Y%4.3f F%i" % (vertex[0], vertex[1], FEED_RATE)]
-        _cmd += ["G1 Z0"]
-        _cmd += ["G4 P%1.1f" % PAUSE_ONE]
+        _cmd += ["G0 Z0"]
+        # _cmd += ["G4 P%1.1f" % PAUSE_ONE]
         _cmd += [f'(end line {ct}.{p})']
     
     return _cmd

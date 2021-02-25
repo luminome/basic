@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import numpy as np
-from shapely.geometry import box, Point, Polygon, LineString, MultiLineString
+from shapely.geometry import box, Point, Polygon, LineString, MultiLineString, MultiPolygon, MultiPoint
 from shapely import affinity
 
 def polygon_max(poly):
@@ -32,8 +32,26 @@ def make_cell(texture,mm_size,pos,d,angle=0.0,ost=0.0):
     if mod > 0.6 or mod < 0.1: n_offset = mm_size/2.0
     
     if texture == 'dust':
-        pass
-        
+        npoints = []
+        l = int((d/mm_size)/2)
+        for i in range(-l,l+2):
+            for j in range(-l,l+2):
+                x = (i*mm_size)#-d*0.5
+                y = (j*mm_size)#-d*0.5
+                if i % 2 == 0: y-= mm_size/2
+                
+                if ost > 0:
+                    p = Point(pos+[x,y]).buffer(mm_size*ost,resolution=3)
+                else:
+                    p = Point(pos+[x,y])
+                    
+                npoints.append(p) #Polygon(p.exterior.coords))
+                
+        if ost > 0:
+            lines = MultiPolygon(npoints)
+        else:
+            lines = MultiPoint(npoints)
+            
     if texture == 'lines':
         npoints = []
         n = np.arange(0,d+(mm_size*2),mm_size)
@@ -45,6 +63,8 @@ def make_cell(texture,mm_size,pos,d,angle=0.0,ost=0.0):
             b = (d,n[y])
             l = np.array([a,b])+(pos-o)
             npoints.append(l)
+        
+        lines = MultiLineString(npoints)
         
     if texture == 'circles':
         n = np.arange(0,d,mm_size)
@@ -59,7 +79,9 @@ def make_cell(texture,mm_size,pos,d,angle=0.0,ost=0.0):
             cc = LineString(p.exterior.coords)
             npoints.append(np.array(cc.coords))
             
-    lines = MultiLineString(npoints)
+        lines = MultiLineString(npoints)
+    
+    
     lines = affinity.rotate(lines, angle, origin=(pos[0],pos[1]), use_radians=False)
 
     return lines
@@ -83,15 +105,32 @@ def textured_poly(N_POLY,point_loc,texture='lines',mm_size=1.0,angle=0.0,ost=0.0
     
     output_shapes = []
     for ct,line in enumerate(lines):
-        i = poly_hull.intersection(line)
-        if i:
+        
+        if texture != 'dust':
+            i = poly_hull.intersection(line)
+            if i:
+                try:
+                    npl = np.array(i.coords)
+                    if ct % 2 == 0: npl = np.flipud(npl)
+                    output_shapes.append(npl)
+                except (NotImplementedError,IndexError):
+                    pass
+        else:
+            i = line.within(poly_hull) #.contains(line)           
             try:
-                npl = np.array(i.coords)
-                if ct % 2 == 0: npl = np.flipud(npl)
-                output_shapes.append(npl)
+                if i:
+                    #print(ct,i,line)
+                    #npl = np.array(line)
+                    #if ct % 2 == 0: npl = np.flipud(npl)
+                    if ost > 0:
+                        output_shapes.append(np.array(line.exterior.coords))
+                    else:
+                        #print(line.coords[0])
+                        output_shapes.append(line.coords[0])
+                        
             except (NotImplementedError,IndexError):
                 pass
-
+                
     return output_shapes
 
 #

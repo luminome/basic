@@ -17,11 +17,11 @@ def rotate(npx, npy, a):
 #_CLASS_ TEXT HANDLING
 class SAC_TEXT:
     
-    def __init__(self, string=None, scale=1.0, position=[0.0,0.0], alignment='left', style='normal', angle=0):
+    def __init__(self, string=None, scale=1.0, pos=[0.0,0.0], alignment='left', style='normal', angle=0, spacing=1.0):
         self.code = isinstance(string, int)
         self.string = string
         self.scale = scale
-        self.position = position
+        self.position = pos
         self.angle = 0.0
         self.alignment = alignment
         self.styled = style
@@ -45,11 +45,11 @@ class SAC_TEXT:
     def bounds(self):
         return np.array([np.amin(self.flat, axis=0),np.amax(self.flat, axis=0)]).flatten()
         
-    def write(self, string_or_list, scale=1.0, style='normal', spacing=1.0):
-        if isinstance(string_or_list, str) or isinstance(string_or_list, int):
-            self.lines = [string_or_list]
+    def write(self, string=None, scale=1.0, pos=[0.0,0.0], alignment='left', style='normal', angle=0, spacing=1.0):
+        if isinstance(string, str) or isinstance(string, int):
+            self.lines = [string]
         else:
-            self.lines = string_or_list
+            self.lines = string
         
         if self.alignment == 'left': x_vary = 0.0
         if self.alignment == 'right': x_vary = -1.0

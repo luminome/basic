@@ -13,7 +13,7 @@ from scipy.spatial.distance import cdist
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from PyQt5 import uic
+#from PyQt5 import uic
 
 import numpy as np
 import pyqtgraph as pg 
@@ -34,7 +34,7 @@ from plistLoader import PlistLoader, plistPath
 
 import basicGcodeCmds as bgc
 
-from modules import circles, textures, characters
+from modules import circles, textures, characters, polygon
 
 LDLF = PlistLoader(plistPath())
 LDLF.load_to_globals(globals(),('MACH','GRBL','MAIN'))
@@ -44,6 +44,12 @@ _parser.add_argument('-file', help = 'gcode file read path')
 _parser.add_argument('-probe', help = 'distance between points to probe in units. (or None)')  
 _parser.add_argument('-s','--session', action='store_true', default=False, help='space plot session')
 _args = _parser.parse_args()
+
+
+print('loading words from',WORDS_FILE)
+with open (WORDS_FILE,'r') as wf:
+    WORDS = wf.readlines()
+    np.random.shuffle(WORDS)
 
         
 FONT = QFont('Monaco', 10)
@@ -61,6 +67,11 @@ off_pen = pg.mkPen(cosmetic=False, width=1.0, color=off_color, style=Qt.DotLine)
 
 trace_color = pg.mkColor(0,120,200,125)
 trace_brush = pg.mkBrush(color=trace_color)
+
+loc_color = pg.mkColor(0,0,255,80)
+loc_pen = pg.mkPen(cosmetic=True, width=0.6, color=loc_color)
+
+bounds = [-10,-10,X_PAGE+10,Y_PAGE+10]
 
 """ROOT CLASSES [ƒ]"""
 class MainPlotWindowHandler():
@@ -94,17 +105,48 @@ class MainPlotWindowHandler():
         self.loaded_file = None
         
     def re_slate(self):
-        #for cplot in self.plot.allChildItems(): self.plot.removeItem(cplot)
+        
+        return False
+        
+        self.t_base
+        
+        
+        
+        for cplot in self.plot.allChildItems(): 
+            if 'GraphItem.GraphItem' in str(cplot.__class__):
+                print(cplot.allChildItems())
+                self.plot.removeItem(cplot)
+        
+                #
+        # ee = self.t_base.allChildItems()
+        # #self.subplots = [sp for sp in ee if 'GraphItem.GraphItem' in str(sp.__class__)] #[1:]
+        # for cplot in ee:
+        #     self.plot.removeItem(cplot)
+        #     # if 'GraphItem.GraphItem' in str(cplot.__class__):
+        #     #     self.plot.removeItem(cplot)
+        #
+        # ee = self.g_base.allChildItems()
+        # for cplot in ee:
+        #     self.plot.removeItem(cplot)
+        # # self.g_base
+        # # self.t_base
+        # # self.loc_base
+        #
+        # # for cplot in self.subplots:
+        # #     self.plot.removeItem(cplot)
+        # #     del(cplot)
+            
         self.subplots = []
         self.subplot_index = 0
         self.bounds_points_index = 0
         if not self.marks: self.g_base.hide()
+        
               
     def attach_plot(self,plot):
         self.plot = plot
         self.plot.setMouseEnabled(True)
         self.plot.setAspectLocked()
-        self.plot.hideAxis('left')
+        #self.plot.hideAxis('left')
         self.plot.setXRange(X_PAGE,0)
         self.plot.setYRange(0,Y_PAGE)
         self.moveproxy = pg.SignalProxy(self.plot.scene().sigMouseMoved, rateLimit=60, slot=self.movecallback)
@@ -121,7 +163,11 @@ class MainPlotWindowHandler():
         self.t_base = t_base
         #self.t_base.setMouseEnabled(False)
         
-        
+        loc_base = pg.GraphItem()
+        self.plot.addItem(loc_base)
+        #g_base.setParentItem(self.plot)
+        self.loc_base = loc_base
+        #self.t_base.setMouseEnabled(False)
         
         
         arrow_dims = 10.0
@@ -138,37 +184,51 @@ class MainPlotWindowHandler():
         self.add_subplot()
         self.parent.log(f'initial subplots {len(self.subplots)}')
         
-    def show_mach_location(self):
+    def show_location(self,x,y):
         npos = np.array([[-1,0],[1,0],[0,-1],[0,1]],dtype=float)
         nadj = np.array([[0,1],[2,3]],dtype=int)
-        x,y,z = MACH.get_pos_tuple()
+        #x,y,z = MACH.get_pos_tuple()
         pos = np.array([x,y],dtype=float)
-        pos_r = pos+(npos*100)
-        s = int(float(z))
         
-        self.location.setData(pos=pos_r, adj=nadj, pen=off_pen, size=1+s, pxMode=False)
+        pos_r = pos+(npos*1000)
+        
+        #s = int(float(z))
+        
+        self.loc_base.setData(pos=pos_r, adj=nadj, pen=loc_pen, pxMode=False)
 
     def movecallback(self,event):
+        precision = 2
+        
         position = event[0]
-        b = self.plot.getViewBox()
-        x = int(b.mapSceneToView(position).x())
-        y = int(b.mapSceneToView(position).y())
-        follow = None
-        if len(self.clickpos):
-            follow = str(self.clickpos)
-        self.parent.user_location.setText(f'({x},{y}) {follow}')
-    
-    def clickcallback(self,event):
-        position = event[0].pos()
         b = self.plot.getViewBox()
         x = b.mapSceneToView(position).x()
         y = b.mapSceneToView(position).y()
         
+        if len(self.clickpos): 
+            dx,dy = self.clickpos
+            follow = f'({dx:.{precision}f},{dy:.{precision}f})'
+        else:
+            follow = None
+            
+        self.parent.user_location.setText(f'({x:.{precision}f},{y:.{precision}f}) {follow}')
+    
+    def clickcallback(self,event):
+        precision = 2
+        
+        position = event[0].scenePos()
+        b = self.plot.getViewBox()
+        x = b.mapSceneToView(position).x()
+        y = b.mapSceneToView(position).y()
+        
+        if self.parent.MOUSE_GRID_SNAP:
+            hdx = np.ceil(x/GRID_SPACING) if x % GRID_SPACING > GRID_SPACING/2.0 else np.floor(x/GRID_SPACING)
+            hdy = np.ceil(y/GRID_SPACING) if y % GRID_SPACING > GRID_SPACING/2.0 else np.floor(y/GRID_SPACING)
+            x,y = hdx*GRID_SPACING, hdy*GRID_SPACING
+        
         delta = self.clickpos
         self.clickpos = (x,y)
         
-        
-        self.parent.user_location.setText(f'CLK({x},{y})')
+        self.parent.user_location.setText(f'CLICK({x:.{precision}f},{y:.{precision}f} snap{self.parent.MOUSE_GRID_SNAP})')
         return self.parent.plotClicked(event,x,y,delta)
         #return super().mousePressEvent(event)
 
@@ -610,6 +670,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage('Message in statusbar.')
         self.COMD = 'sent automatically' #'basic program loaded'
         self.AUTORUN = False
+        self.MOUSE_GRID_SNAP = True
         self.tsec = 0
         self.frame = 0
 
@@ -656,8 +717,8 @@ class MainWindow(QMainWindow):
         self.tableWidget.verticalHeader().hide()
         self.tableWidget.setSelectionMode(QAbstractItemView.NoSelection) # .NoSelection .MultiSelection)
         self.tableWidget.setMouseTracking(True)
-        self.tableWidget.setRowCount(5)        
-        self.tableWidget.setColumnCount(9)
+        self.tableWidget.setRowCount(4)
+        self.tableWidget.setColumnCount(10)
   
         self.tableWidget.setStyleSheet(self.spec_style_sheet)
         self.tableWidget.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -676,10 +737,9 @@ class MainWindow(QMainWindow):
         MMM.re_slate()
         
         GRA.prepare()
+        #GRA.set_tape()
         
-        GRA.set_tape()
-        
-        MACH.reset_delivery()
+        #MACH.reset_delivery()
         
         self.log('wiped/reset',MMM,GRA,MACH)
         
@@ -746,20 +806,20 @@ class MainWindow(QMainWindow):
         flit.setObjectName('messenger')
         flit.setAlignment(Qt.AlignLeft)
         flit.setAlignment(Qt.AlignVCenter)
-        self.tableWidget.setCellWidget(0 , 8, flit)
+        self.tableWidget.setCellWidget(0 , 9, flit)
         self.messenger = flit
         
         flit = QLabel('(comment)')
         flit.setObjectName('user_location')
         flit.setAlignment(Qt.AlignLeft)
         flit.setAlignment(Qt.AlignVCenter)
-        self.tableWidget.setCellWidget(1 , 8, flit)
+        self.tableWidget.setCellWidget(1 , 9, flit)
         self.user_location = flit
         
         flit = Selecta(self)
         flit.setObjectName('module_selecta')
         flit.addItems(["module", "numbers", "G0 (move to)", "circles", "texture", "word"])
-        self.tableWidget.setCellWidget(2 , 8, flit)
+        self.tableWidget.setCellWidget(2 , 9, flit)
         self.module_selecta = flit
         
         for c in range(0,self.tableWidget.columnCount()):
@@ -801,10 +861,14 @@ class MainWindow(QMainWindow):
         #self.ControlWidget.setFixedHeight(180)
         #self.testSplitter.setSizes([400,100])
         
-        self.log_table.setGeometry(0,0,s.width(),t-32)
-        self.log_table.currentheight = t-32
-        
         self.vars_tree.setGeometry(0,0,s.width(),t)
+        
+        self.log_table.currentheight = t-32
+        if self.log_table.compressed_state: t = self.log_table.rowheight+32
+        self.log_table.setGeometry(0,0,s.width(),t-32)
+        
+        
+        
         #self.log_table.currentheight = t-32
         
         #self.log_table.lower()
@@ -830,8 +894,16 @@ class MainWindow(QMainWindow):
         if MACH.delivering: GRA.iterate(spec)
 
     def machine_trace(self):
-        GRA.machine_trace()
         
+        if MACH.connected and MACH.status:
+            for n,v in enumerate(MACH.status[1].split(',')):
+                tgt = self.tableWidget.item(n,5).setText(str("%8.3f" % float(v)))
+            tgt = self.tableWidget.item(3,5).setText(str(MACH.status[0]))
+            if MACH.lc: self.progressBar.setValue(int(100*(MACH.gc/MACH.gcl)))                
+            #MMM.show_mach_location()
+        
+        GRA.machine_trace()
+    
     def update_frame(self):
         try:
             
@@ -841,14 +913,7 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage('%02i | %ifps' % (t,self.frame))
                 self.tsec = t
                 self.frame = 0
-            
-            if MACH.connected and MACH.status:
-                for n,v in enumerate(MACH.status[1].split(',')):
-                    tgt = self.tableWidget.item(n,5).setText(str("%8.3f" % float(v)))
-                tgt = self.tableWidget.item(3,5).setText(str(MACH.status[0]))
-                if MACH.lc: self.progressBar.setValue(int(100*(MACH.gc/MACH.gcl)))                
-                #MMM.show_mach_location()
-                
+
             if self.AUTORUN:
                 GRA.iterate()
                 
@@ -868,20 +933,30 @@ class MainWindow(QMainWindow):
         self.log("asyncio loop.stop.")
 
     def plotClicked(self, evt, x, y, delta=None):
-        
-        #self.parent.user_location.setText(f'Clicked ({x},{y})')
-        #print(evt, x, y)
-        
-        if self.module_selecta.index == 1: #for "numbers"
-        
-            f = characters.SAC_TEXT(position=[x,y], alignment='center')
-            f.write((f'{self.plot_click_interactions_count}',),10.0,'bold')
             
-            rew = bgc.line(f.lines_all,0)
-            MMM.add_gcode_points(rew)
+            
+        if x < bounds[0] or x > bounds[2] or y < bounds[1] or y > bounds[3]:
+            self.user_location.setText('clicked out of bounds')
+            return False
+            
+        if self.module_selecta.index == 1: #for "numbers"
+            MOD_TEXT['pos'] = [x,y]
+            st = (f'{self.plot_click_interactions_count}',)
+            
+            f = characters.SAC_TEXT(**MOD_TEXT)
+            MOD_TEXT['scale'] = 2.0
+            f.write(st, **MOD_TEXT)
+            MOD_TEXT['scale'] = 0.5
+            f.write(WORDS[self.plot_click_interactions_count].strip(), **MOD_TEXT)
+            
+            
+            GC = bgc.probe_set_depth(x,y,1.5)
+            GC = bgc.line(f.lines_all,0)
+            
+            MMM.add_gcode_points(GC)
             #MACH.reset_delivery()
             
-            MACH.load_gcode(rew)
+            MACH.load_gcode(GC)
             
             MACH.delivering = True
             
@@ -910,20 +985,38 @@ class MainWindow(QMainWindow):
                 MACH.delivering = True
 
         
-        elif self.module_selecta.index == 4: #for "texture"            
+        elif self.module_selecta.index == 4: #for "texture"         
+            
             MOD_TEXTURE['pos'] = [x,y]
             codez = textures.texture(**MOD_TEXTURE)
-            rew = bgc.line(codez,0)
-            MMM.add_gcode_points(rew)
-            MACH.load_gcode(rew)
+            if MOD_TEXTURE['style'] == 'dust' and MOD_TEXTURE['ost'] == 0:
+                GC = []
+                for lg in codez:
+                    GC += bgc.probe_set_depth(lg[0],lg[1],1.5)
+            else:
+                GC = bgc.probe_set_depth(x,y,1.5)
+                GC += bgc.line(codez,0)
+                
+            MMM.add_gcode_points(GC)
+            MACH.load_gcode(GC)
             MACH.delivering = True
         
         if self.module_selecta.index == 5: #for "word"
         
-            f = characters.SAC_TEXT(position=[x,y], alignment='center')
-            f.write((f'{self.plot_click_interactions_count}',),10.0,'bold')
+            # f = characters.SAC_TEXT(position=[x,y], alignment='center')
+            # f.write(('+',),10.0,'normal')
+            # GC = bgc.line(f.lines_all,0)
             
-            rew = bgc.line(f.lines_all,0)
+            
+            
+            
+            
+            
+            
+            MOD_POLY['pos'] = [x,y]
+            codez = polygon.derive(**MOD_POLY)
+            return
+            
             MMM.add_gcode_points(rew)
             #MACH.reset_delivery()
             
@@ -982,6 +1075,8 @@ class MainWindow(QMainWindow):
             self.AUTORUN = not self.AUTORUN
         elif q.text() == 'wipe':
             self.basic_reset()
+        elif q.text() == 'grid':
+            self.MOUSE_GRID_SNAP = q.isChecked()
         elif q.text() == 'save':
             #self.basic_reset()
             with open(SAVE_FILE,'w+') as fe:

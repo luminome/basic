@@ -17,9 +17,9 @@
             "spacing": 1.0
         },
         "MOD_POLY": {
-            "sides":3,
-			"scale": 1.0,
-			"d":1.0
+            "sides": 6,
+            "radius": 200.0,
+            "d": 1.0
         },
         "MOD_ARC": {
             "height": 40.0,
@@ -30,7 +30,7 @@
             "wmax": 1.0,
             "wmin": 0.2,
             "style": "dust",
-            "pitch": 25,
+            "pitch": 12.5,
             "angle": 0,
             "ost": 0
         },

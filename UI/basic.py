@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import time
-from time import localtime,strftime
+from time import localtime, strftime
 import locale
 import inspect
 import traceback
@@ -13,7 +13,7 @@ from scipy.spatial.distance import cdist
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-#from PyQt5 import uic
+from PyQt5 import uic
 
 import numpy as np
 import pyqtgraph as pg 
@@ -73,8 +73,11 @@ loc_pen = pg.mkPen(cosmetic=True, width=0.6, color=loc_color)
 
 bounds = [-10,-10,X_PAGE+10,Y_PAGE+10]
 
+
 """ROOT CLASSES [ƒ]"""
-class MainPlotWindowHandler():
+
+
+class MainPlotWindowHandler:
     """
     creates file_raw(gcode) and batch(something else instruction)
     refer to gcodeparser for else instructions
@@ -818,7 +821,7 @@ class MainWindow(QMainWindow):
         
         flit = Selecta(self)
         flit.setObjectName('module_selecta')
-        flit.addItems(["module", "numbers", "G0 (move to)", "circles", "texture", "word"])
+        flit.addItems(["module", "numbers", "G0 (move to)", "circles", "texture", "polygon"])
         self.tableWidget.setCellWidget(2 , 9, flit)
         self.module_selecta = flit
         
@@ -1001,25 +1004,24 @@ class MainWindow(QMainWindow):
             MACH.load_gcode(GC)
             MACH.delivering = True
         
-        if self.module_selecta.index == 5: #for "word"
-        
-            # f = characters.SAC_TEXT(position=[x,y], alignment='center')
-            # f.write(('+',),10.0,'normal')
-            # GC = bgc.line(f.lines_all,0)
+        if self.module_selecta.index == 5: #for "polygon"
+
+            GC = bgc.probe_set_depth(x,y,1.5)
+            f = characters.SAC_TEXT(pos=[x,y], alignment='center')
+            f.write(('+',),1.0,'normal')
+            GC += bgc.line(f.lines_all,0)
             
-            
-            
-            
-            
-            
-            
+            if delta: MOD_POLY['delta'] = delta
             MOD_POLY['pos'] = [x,y]
-            codez = polygon.derive(**MOD_POLY)
-            return
+            poly = polygon.derive(**MOD_POLY)
             
-            MMM.add_gcode_points(rew)
+            
+            #print(poly)
+            GC += bgc.line([poly],0)
+            
+            MMM.add_gcode_points(GC)
             #MACH.reset_delivery()
-            
+            return
             MACH.load_gcode(rew)
             
             MACH.delivering = True

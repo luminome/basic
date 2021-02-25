@@ -1,49 +1,53 @@
 #!/usr/bin/env python3
 import numpy as np
-import basicGcodeCmds as bgc
-from modules import circles, textures, characters
 
 from plistLoader import PlistLoader, plistPath
 LDLF = PlistLoader(plistPath())
-LDLF.load_to_globals(globals(),('MACH','GRBL','MAIN'))
+
+LDLF.load_to_globals(globals(), ('MACH', 'GRBL', 'MAIN'))
 
 
 
 
-
-
-
-
-#utility ƒ
 def rotate(npx, npy, a):
+    """#utility ƒ"""
     nx = npx*np.cos(a)-npy*np.sin(a)
     ny = npy*np.cos(a)+npx*np.sin(a)
-    return nx,ny
+    return nx, ny
 
 
 
 
 
-def derive(pos=[0.0,0.0], radius=1.0, sides=3, scale=1.0, d=1.0, delta=None, angle=0.0):
+def derive(pos=None, delta=None, radius=1.0, sides=3, d=1.0, angle=0.0):
     
-    n = [radius,0.0]
-    i = np.pi/sides
+    if delta is None:
+        delta = [0.0, 0.0]
+    if pos is None:
+        pos = [0.0, 0.0]
+
+    n = [radius, 0.0]
+    i = (2*np.pi)/sides
     rtd = []
     
-    #these r polygons and require closing point
+    b = np.array(delta)
+    a = np.array(pos)
+    d = a-b
+    #% measure angle
+    
+    ang = np.arctan2(d[1], d[0])
+    #print(np.degrees(a))
+    
+    #TODO these r polygons and require closing point
     
     for p in range(0,sides+1):
         o = p*i
-        p = rotate(n[0],n[1],o)
-        rtd.append(p)
-    #p = pos+
-    
-    print(rtd)
+        x, y = rotate(n[0], n[1], o+ang)
+        rtd.append([x+pos[0], y+pos[1]])
+
+    return rtd
     pass
 
+
 if __name__ == '__main__':
-    
     pass
-    #def poly(pos=[0,0],radius=1.0,sides=3,angle=0.0,)
-    
-    

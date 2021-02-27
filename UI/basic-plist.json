@@ -1,9 +1,9 @@
 {
     "MAIN": {
-        "X_PAGE": 1400,
-        "Y_PAGE": 1000,
+        "X_PAGE": 1500,
+        "Y_PAGE": 750,
         "GRAPH_SUBPLOT_LEN": 200,
-        "GRID_SPACING": 100.0,
+        "GRID_SPACING": 50.0,
         "ROOT_ABS_PATH": "/Users/sac/Sites/basic",
         "CHARDATA_N": "UI/static/charmap.txt",
         "CHARDATA_B": "UI/static/charmap-bold.txt",
@@ -18,20 +18,20 @@
         },
         "MOD_POLY": {
             "sides": 6,
-            "radius": 200.0,
-            "d": 1.0
+            "radius": 80,
+            "rmin": 0.5
         },
         "MOD_ARC": {
             "height": 40.0,
             "resolution": 0.05
         },
         "MOD_TEXTURE": {
-            "diam": 200,
-            "wmax": 1.0,
-            "wmin": 0.2,
-            "style": "dust",
-            "pitch": 12.5,
-            "angle": 0,
+            "diam": 60,
+            "wmax": 1.2,
+            "wmin": 0.8,
+            "style": "lines",
+            "pitch": 10,
+            "angle": 26.57,
             "ost": 0
         },
         "ACTIONS": {
@@ -193,6 +193,10 @@
                         "f": "set grid",
                         "k": "G",
                         "c": true
+                    },
+                    "plus": {
+                        "f": "make plus",
+                        "k": "P"
                     }
                 },
                 "menu": 1,
@@ -262,7 +266,11 @@
         ],
         "VARS": {
             "LOGS": "False2",
-            "PATH": "gcode/smeg.svg.gcode"
-        }
+            "PATH": "gcode/smeg.svg.gcode",
+            "SYMPA": "BURLY"
+        },
+        "NOTES": [
+            "2/27 set \"grbl step idle\" to noe. (0)"
+        ]
     }
 }

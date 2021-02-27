@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-from shapely.geometry import box, LineString, Polygon
+from shapely.geometry import box, LineString
 from scipy import spatial
 import numpy as np
 import basicGcodeCmds as bgc
 from modules import circles, textures, characters
 
 from plistLoader import PlistLoader, plistPath
-LDLF = PlistLoader(plistPath())
-LDLF.load_to_globals(globals(),('MACH','GRBL','MAIN'))
 
-MOUSE_GRID_SNAP = True #False
+
+
+LDLF = PlistLoader(plistPath())
+LDLF.load_to_globals(globals(), ('MACH', 'GRBL', 'MAIN'))
+
+MOUSE_GRID_SNAP = True
 
 #
 # In [1]: from scipy import spatial
@@ -50,88 +53,82 @@ MOUSE_GRID_SNAP = True #False
 # Out[10]: array([  8.45828909,  30.18426696])
 #
 
-
-
-
-
-
-bounds = box(-10,-10,X_PAGE+10,Y_PAGE+10) #np.array([0,0],[0,1],[1,1],[]
+bounds = box(-10, -10, X_PAGE + 10, Y_PAGE + 10)
 
 
 #TODO: now scatter
 #np.linalg.norm(from_array[:,:,None]-to_array[:,None,:], axis=0)
 
 def perspective_point(r_loc, pn=0):
-    
     GCODE = []
-    pw = X_PAGE*0.5 
-    v_offset = Y_PAGE*1.2
-    
-    PL = [-pw,v_offset]
-    PR = [pw+X_PAGE,v_offset]
-    PZ = [X_PAGE/2.0,Y_PAGE*-6.0]
-    
-    z_mint = 1+np.random.random_sample()*10
-    
+    pw = X_PAGE * 0.5
+    v_offset = Y_PAGE * 1.2
+
+    PL = [-pw, v_offset]
+    PR = [pw + X_PAGE, v_offset]
+    PZ = [X_PAGE / 2.0, Y_PAGE * -3.0]
+
+    z_mint = 2 + np.random.random_sample() * 4
+
     # apt = np.array([X_PAGE,Y_PAGE])
     # r_loc = np.random.random_sample(2)*apt
     #r_len = 100*z_mint #(20+np.random.random_sample(3)*100.0)*z_mint
-    
+
     r_len = np.empty(3)
-    r_len.fill(10*z_mint)
-    
-    pto = [PL,PR,PZ]
+    r_len.fill(10 * z_mint)
+
+    pto = [PL, PR, PZ]
     lpt = []
-    GCODE += bgc.probe_set_depth(r_loc[0],r_loc[1],1.0)
-    
-    for n,t in enumerate(pto):
+    GCODE += bgc.probe_set_depth(r_loc[0], r_loc[1], 1.0)
+
+    for n, t in enumerate(pto):
         tg = np.array(t)
-        d = tg-r_loc
+        d = tg - r_loc
         c = np.linalg.norm(d)
         d_unit = (d / c)
-        pts = np.array([r_len[n]*d_unit*-1,r_len[n]*d_unit])+r_loc    
-        
+        pts = np.array([r_len[n] * d_unit * -1, r_len[n] * d_unit]) + r_loc
+
         sh_graph_line = LineString(pts)
         gne = bounds.intersection(sh_graph_line)
         pts = np.array(gne.coords)
-        
-        
-        cpp = r_loc-pts[0]
+
+        cpp = r_loc - pts[0]
         cpc = np.linalg.norm(cpp)
         #if cpc:
         c_unit = (cpp / cpc)
-        
-        lpt.append([cpc,c_unit])
-        GCODE += bgc.line([pts.tolist()],n)
-    
-    txpos = -1.0*((lpt[2][0]+5.0)*lpt[2][1])+r_loc
-    
+
+        lpt.append([cpc, c_unit])
+        GCODE += bgc.line([pts.tolist()], n)
+
+    txpos = -1.0 * ((lpt[2][0] + 5.0) * lpt[2][1]) + r_loc
+
     # txpos = r_loc+(lpt[2][0]*1.1)
-    f = characters.SAC_TEXT(position=[txpos[0],txpos[1]], alignment='center')
-    f.write((f'{pn:02}',),0.3,'normal')
-    GCODE += bgc.line(f.lines_all,n)
-        
+    f = characters.SAC_TEXT(pos=[txpos[0], txpos[1]], alignment='center')
+    f.write((f'{pn:02}',), 0.3, 'normal')
+    GCODE += bgc.line(f.lines_all, n)
+
     return GCODE
 
 
 def get_scatter(ARRC):
-    apt = np.array([X_PAGE,Y_PAGE])
-    r_loc = np.random.random_sample(2)*apt
-    
-    if MOUSE_GRID_SNAP: r_loc = np.round(r_loc/GRID_SPACING)*GRID_SPACING
-        #y = np.round(y/GRID_SPACING)*GRID_SPACING
-    
-    
+    apt = np.array([X_PAGE, Y_PAGE])
+    r_loc = np.random.random_sample(2) * apt
+
+    if MOUSE_GRID_SNAP:
+        r_loc = np.round(r_loc / GRID_SPACING) * GRID_SPACING
+    #y = np.round(y/GRID_SPACING)*GRID_SPACING
+
+
     distance, index = spatial.KDTree(ARRC).query(r_loc)
-    
-    print(ARRC.shape[0],r_loc)
+
+    print(ARRC.shape[0], r_loc)
     print(distance, index)
 
     if distance < 200:
         get_scatter(ARRC)
     else:
-        ARRC = np.vstack((ARRC,r_loc))
-    
+        ARRC = np.vstack((ARRC, r_loc))
+
     return ARRC
 
 
@@ -140,28 +137,23 @@ def get_scatter(ARRC):
 
 def run_perspective():
     GCO = []
-    centers = np.zeros([1,2])
-    
-    for n in range(0,50):
+    centers = np.zeros([1, 2])
+
+    for n in range(0, 20):
         centers = get_scatter(centers)
-    
-    for n in range(0,len(centers)):
-        GCO += perspective_point(centers[n],n)
-    
-    
-    
+
+    for n in range(0, len(centers)):
+        GCO += perspective_point(centers[n], n)
+
     return GCO
-    
+
 
 
 if __name__ == '__main__':
-    
     pass
 
-    
-    
-    
+
+
     #main()
     #point_loc = (_lim) * np.random.random_sample((1,2)) -(_lim/2)
     #left,right,top
-    

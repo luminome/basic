@@ -14,7 +14,7 @@ class PlistLoader(object):
         self.load_plist(path)
         
     def load_plist(self, path):
-        with open(path,'r') as fi:
+        with open(path, 'r') as fi:
             json_plist = json.load(fi)
         self.VARS = json_plist
 

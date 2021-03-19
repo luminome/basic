@@ -75,11 +75,12 @@ def make_cell(texture, mm_size, pos, d, angle=0.0, ost=0.0):
         d_offset = (((len(n) - 1) + ost) * mm_size) + n_offset
         npoints = []
         px, py = pos
-        pos_center = [(px + (d_offset)) + ost, py]
+        pos_center = [(px + d_offset) + ost, py]
 
-        n = np.arange(0, d * 2, mm_size)
+        n = np.arange(0, d * 3, mm_size)
         for x in range(1, len(n) - 1):
-            p = Point(pos_center).buffer(n[x], resolution=2 + int(x * 1.0))
+            #//resolution change
+            p = Point(pos_center).buffer(n[x], resolution=16+x)  #int(n* 1.0))  #, resolution=2 + int(x * 1.0))
             cc = LineString(p.exterior.coords)
             npoints.append(np.array(cc.coords))
 

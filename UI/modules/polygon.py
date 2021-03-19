@@ -33,7 +33,7 @@ def derive(pos=None, delta=None, radius=1.0, sides=3, rmin=None, angle=0.0):
     if rmin:
         radius *= rmin+(np.random.random_sample()*(1-rmin))
 
-    n = [radius, 0.0]
+    n = [0.0, radius]
     i = (2*np.pi)/sides
     rtd = []
     

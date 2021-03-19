@@ -1039,7 +1039,9 @@ class MainWindow(QMainWindow):
         elif q.text() == 'auto':
             self.AUTORUN = not self.AUTORUN
         elif q.text() == 'wipe':
-            self.basic_reset()
+            self.lineEdit.setText('wipe')
+            self.mach_cmd()
+            #FIXME changed: self.basic_reset()
         elif q.text() == 'grid':
             self.MOUSE_GRID_SNAP = q.isChecked()
         elif q.text() == 'plus':
@@ -1068,7 +1070,7 @@ class MainWindow(QMainWindow):
                 mx, my, mz = [float(a) for a in MACH.status[1].split(',')]  #s,m,w,b,r
 
             MACH.delivering = False
-            cmd = f'G0 X{mx + x * 10} Y{my + y * 10} Z{mz} F{SEEK_RATE}'
+            cmd = f'G0 X{mx + x * 1} Y{my + y * 1} Z{mz} F{SEEK_RATE}'
             self.lineEdit.setText(cmd)
             self.mach_cmd()
 

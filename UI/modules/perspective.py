@@ -62,13 +62,13 @@ bounds = box(-10, -10, X_PAGE + 10, Y_PAGE + 10)
 def perspective_point(r_loc, pn=0):
     GCODE = []
     pw = X_PAGE * 0.5
-    v_offset = Y_PAGE * 1.2
+    v_offset = Y_PAGE * 0.5
 
     PL = [-pw, v_offset]
     PR = [pw + X_PAGE, v_offset]
-    PZ = [X_PAGE / 2.0, Y_PAGE * -3.0]
+    PZ = [X_PAGE / 2.0, Y_PAGE * 3.0]
 
-    z_mint = 2 + np.random.random_sample() * 4
+    z_mint = 2 + np.random.random_sample() * 20
 
     # apt = np.array([X_PAGE,Y_PAGE])
     # r_loc = np.random.random_sample(2)*apt
@@ -118,7 +118,6 @@ def get_scatter(ARRC):
         r_loc = np.round(r_loc / GRID_SPACING) * GRID_SPACING
     #y = np.round(y/GRID_SPACING)*GRID_SPACING
 
-
     distance, index = spatial.KDTree(ARRC).query(r_loc)
 
     print(ARRC.shape[0], r_loc)
@@ -139,7 +138,7 @@ def run_perspective():
     GCO = []
     centers = np.zeros([1, 2])
 
-    for n in range(0, 20):
+    for n in range(0, 40):
         centers = get_scatter(centers)
 
     for n in range(0, len(centers)):

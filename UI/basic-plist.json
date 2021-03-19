@@ -1,7 +1,7 @@
 {
     "MAIN": {
-        "X_PAGE": 1500,
-        "Y_PAGE": 750,
+        "X_PAGE": 1400,
+        "Y_PAGE": 800,
         "GRAPH_SUBPLOT_LEN": 200,
         "GRID_SPACING": 50.0,
         "ROOT_ABS_PATH": "/Users/sac/Sites/basic",
@@ -10,7 +10,7 @@
         "WORDS_FILE": "UI/static/words.txt",
         "SAVE_FILE": "UI/static/save.cgode",
         "MOD_TEXT": {
-            "scale": 4.0,
+            "scale": 2.0,
             "style": "bold",
             "alignment": "center",
             "angle": 0,
@@ -18,21 +18,21 @@
         },
         "MOD_POLY": {
             "sides": 6,
-            "radius": 80,
-            "rmin": 0.5
+            "radius": 50,
+            "rmin": 0.75
         },
         "MOD_ARC": {
-            "height": 40.0,
+            "height": 80.0,
             "resolution": 0.05
         },
         "MOD_TEXTURE": {
             "diam": 60,
-            "wmax": 1.2,
+            "wmax": 1.0,
             "wmin": 0.8,
             "style": "lines",
             "pitch": 10,
-            "angle": 26.57,
-            "ost": 0
+            "angle": -26.57,
+            "ost": 1.0
         },
         "ACTIONS": {
             "machine": {
